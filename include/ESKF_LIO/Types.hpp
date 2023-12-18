@@ -24,6 +24,6 @@ namespace ESKF_LIO
     };
     using LidarMeasurementPtr = typename std::shared_ptr<LidarMeasurement>;
 
-}; // namespace ESKF_LIO
+    }; // namespace ESKF_LIO
 
 #endif // ESKF_LIO_TYPES_HPP_

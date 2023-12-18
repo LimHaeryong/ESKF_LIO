@@ -1,0 +1,31 @@
+# Calibration Phasma25 22/03/22
+sensors:
+  imu:
+    topic_name: '/alphasense/imu'
+    update_rate: 400.0
+    extrinsics:
+      quaternion: [ 0.0, 0.0, 0.0, 1.0 ]
+      translation: [ 0.0, 0.0, 0.0 ]
+    intrinsics:
+      parameters:
+        bias_a: [ 0.06080652138668933, 0.08353074835853214, 0.057072968234636895 ]
+        bias_g: [ -0.0015351229643790084, -0.0013449146576507546, 0.00030127855524786183 ]
+        gravity: [ 0.01165152782783894, 9.804989173462031, -0.008749296634685332 ]
+        accel_noise_density: [105.0, 105.0, 135.0] # micro g / Hz^0.5
+        accel_zero_g_offset: 20.0 # mg
+        gyro_noise_density: 0.014 # deg/s/ Hz^0.5
+        gyro_zero_rate_offset: 1.0 # deg/s
+      type: IMU
+    parent: base_link
+  lidar:
+    topic_name: '/hesai/pandar'
+    extrinsics:
+      quaternion: [ 0.7071068, -0.7071068, 0, 0 ]
+      translation: [ -0.001, -0.00855, 0.055 ]
+    parent: imu
+  measurement_tip:
+    parent: imu
+    extrinsics:
+      quaternion: [ 0, 0, 0, 1 ]
+      translation: [ 0.059, -0.00855, 0.1964 ]
+

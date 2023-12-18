@@ -46,6 +46,10 @@ target_link_libraries(eskf_lio_node
   eskf_lio
 )
 
+target_compile_definitions(eskf_lio_node PUBLIC
+  CONFIG_PATH="${CMAKE_CURRENT_SOURCE_DIR}/config/hilti_config.yaml"
+)
+
 install(TARGETS
   eskf_lio_node
   DESTINATION lib/${PROJECT_NAME}
