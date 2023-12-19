@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.22)
 project(eskf_lio)
 
+cmake_policy(SET CMP0072 NEW)
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic )
 endif()
@@ -69,9 +71,10 @@ if(BUILD_TESTING)
   target_link_libraries(${PROJECT_NAME}_localmap_test
     eskf_lio
   )
-  # set(ament_cmake_copyright_FOUND TRUE)
-  # set(ament_cmake_cpplint_FOUND TRUE)
-  # ament_lint_auto_find_test_dependencies()
+  #set(ament_cmake_copyright_FOUND TRUE)
+  #set(ament_cmake_cpplint_FOUND TRUE)
+  ament_lint_auto_find_test_dependencies()
+  
 endif()
 
 ament_package()

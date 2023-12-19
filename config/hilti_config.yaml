@@ -1,4 +1,3 @@
-# Calibration Phasma25 22/03/22
 sensors:
   imu:
     topic_name: '/alphasense/imu'
@@ -29,3 +28,7 @@ sensors:
       quaternion: [ 0, 0, 0, 1 ]
       translation: [ 0.059, -0.00855, 0.1964 ]
 
+local_map:
+  voxel_size: 1.0
+  max_num_points_per_voxel: 20
+  num_voxel_offsets: 7
