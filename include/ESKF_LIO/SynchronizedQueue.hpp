@@ -30,7 +30,7 @@ public:
         std::unique_lock<std::mutex> lock(mutex_);
         if (queue_.empty())
         {
-            return {};
+            return std::nullopt;
         }
         T data = std::move(queue_.front());
         queue_.pop();
