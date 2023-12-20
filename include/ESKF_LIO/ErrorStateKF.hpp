@@ -31,6 +31,7 @@ public:
 
   ErrorStateKF(const YAML::Node & config);
   const std::deque<State> & getStates() const {return states_;}
+  double getLastStateTime() const {return states_.back().timestamp;}
 
   void initState(double lidarEndTime) {states_[0].timestamp = lidarEndTime;}
   void process(ImuMeasurementPtr imu);

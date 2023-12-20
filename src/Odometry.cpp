@@ -2,36 +2,18 @@
 
 namespace ESKF_LIO
 {
-Odometry::Odometry(const YAML::Node & config, ImuBuffer imuBuffer, CloudBuffer cloudBuffer)
-: imuBuffer_(imuBuffer), cloudBuffer_(cloudBuffer),
-  kalmanFilter_(std::make_shared<ErrorStateKF>(config)),
-  localMap_(std::make_shared<LocalMap>(config))
-{
-  auto imu = config["sensors"]["imu"];
-  auto lidar = config["sensors"]["lidar"];
-
-  auto lidar_quat = lidar["extrinsics"]["quaternion"].as<std::vector<double>>();
-  auto lidar_trans = lidar["extrinsics"]["translation"].as<std::vector<double>>();
-
-  imuToLidar_.quat = Eigen::Map<Eigen::Quaterniond>(lidar_quat.data());
-  imuToLidar_.trans = Eigen::Map<Eigen::Vector3d>(lidar_trans.data());
-}
 
 void Odometry::run()
 {
   while (true) {
     // get imu measurement
     auto imuMeas = imuBuffer_->popAll();
-    if (!imuMeas.empty()) {
-      for (auto & imu : imuMeas) {
-        imuMeas_.push_back(imu);
-      }
-    }
 
     // kalmanfilter process
     if (!imuMeas.empty() && initialized_) {
-      for (auto & imu : imuMeas) {
-        kalmanFilter_->process(std::move(imu));
+      while (!imuMeas.empty()) {
+        kalmanFilter_->process(imuMeas.front());
+        imuMeas.pop_front();
       }
     }
 
@@ -47,17 +29,25 @@ void Odometry::run()
       continue;
     }
 
+    auto lidarEndTime = lidarMeas_->endTime;
     if (!initialized_) {
       initialized_ = true;
-
-      lastUpdatedTime_ = lidarMeas_->endTime;
-      kalmanFilter_->initState(lastUpdatedTime_);
-      while (imuMeas_[0]->timestamp < lastUpdatedTime_) {
-        imuMeas_.pop_front();
+      kalmanFilter_->initState(lidarMeas_->endTime);
+      while (!imuMeas.empty()) {
+        kalmanFilter_->process(imuMeas.front());
+        imuMeas.pop_front();
       }
       continue;
     }
 
+    auto lastUpdatedTime = kalmanFilter_->getLastStateTime();
+    // wait for next imu
+    if (lastUpdatedTime < lidarEndTime) {
+      continue;
+    }
+
+    const auto & states = kalmanFilter_->getStates();
+    cloudPreprocessor_->process(states, lidarMeas_);
 
   }
 }

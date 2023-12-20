@@ -28,6 +28,8 @@ add_library(eskf_lio
   src/Odometry.cpp
   src/ErrorStateKF.cpp
   src/LocalMap.cpp
+  src/CloudPreprocessor.cpp
+  src/Utils.cpp
 )
 
 target_link_libraries(eskf_lio 

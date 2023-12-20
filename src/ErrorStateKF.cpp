@@ -46,10 +46,12 @@ ErrorStateKF::ErrorStateKF(const YAML::Node & config)
 void ErrorStateKF::process(ImuMeasurementPtr imu)
 {
   const auto & prevState = states_.back();
+  double dt = imu->timestamp - prevState.timestamp;
+  if (dt < 0.0) {
+    return;
+  }
   State newState = prevState;
   newState.timestamp = imu->timestamp;
-  double dt = imu->timestamp - prevState.timestamp;
-
   Eigen::Matrix3d R = prevState.attitude.toRotationMatrix();
   Eigen::Vector3d acceleration = imu->acceleration - prevState.bias_accel;
   Eigen::Vector3d angular_velocity = imu->angularVelocity - prevState.bias_gyro;

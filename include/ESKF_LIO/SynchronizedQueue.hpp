@@ -36,15 +36,14 @@ public:
     return data;
   }
 
-  std::vector<T> popAll()
+  std::deque<T> popAll()
   {
     std::unique_lock<std::mutex> lock(mutex_);
     if (queue_.empty()) {
       return {};
     }
 
-    std::vector<T> data;
-    data.reserve(queue_.size());
+    std::deque<T> data;
     while (!queue_.empty()) {
       data.push_back(queue_.front());
       queue_.pop();
