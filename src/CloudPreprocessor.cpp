@@ -9,6 +9,7 @@ void CloudPreprocessor::process(
   const std::deque<ErrorStateKF::State> & states,
   LidarMeasurementPtr lidarMeas) const
 {
+
   auto & cloud_points = lidarMeas->cloud->points_;
   // transform lidar points to imu coordinate
   Utils::transformPoints(cloud_points, T_il_);

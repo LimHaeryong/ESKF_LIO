@@ -6,9 +6,10 @@
 namespace ESKF_LIO
 {
 std::optional<std::pair<Eigen::Vector3d, double>> LocalMap::Voxel::nearestSearchInVoxel(
-  const Eigen::Vector3d & point, double maxDistSq) const
+  const Eigen::Vector3d & point,
+  const double maxDistSq) const
 {
-  Eigen::Vector3d nearestPoint;
+  Eigen::Vector3d nearestPoint = Eigen::Vector3d::Zero();
   double nearestDistSq = maxDistSq;
 
   for (const auto & voxelPoint : points) {
@@ -40,10 +41,53 @@ void LocalMap::updateLocalMap(const PointVector & points)
   }
 }
 
-std::optional<std::pair<Eigen::Vector3d, double>> LocalMap::nearestSearch(
-  const Eigen::Vector3d & point, double maxDistSq) const
+LocalMap::Correspondence LocalMap::correspondenceMatching(
+  const PointVector & points,
+  const double maxDistSq,
+  double & matchingRmse) const
 {
   std::shared_lock<std::shared_mutex> lock(mutex_);
+  Correspondence correspondence;
+  auto & [P, Q] = correspondence;
+  P.reserve(points.size());
+  Q.reserve(points.size());
+
+  matchingRmse = 0.0;
+
+#pragma omp parallel
+  {
+    double distanceSquaredSumPrivate = 0.0;
+    PointVector P_private, Q_private;
+#pragma omp for nowait
+    for (size_t i = 0; i < points.size(); ++i) {
+      auto searchResult = nearestSearch(points[i], maxDistSq);
+      if (searchResult.has_value()) {
+        P_private.push_back(points[i]);
+        Q_private.push_back(searchResult.value().first);
+        distanceSquaredSumPrivate += searchResult.value().second;
+      }
+    }
+#pragma omp critical
+    {
+      matchingRmse += distanceSquaredSumPrivate;
+      for (size_t i = 0; i < P_private.size(); ++i) {
+        P.push_back(P_private[i]);
+        Q.push_back(Q_private[i]);
+      }
+    }
+  }
+
+  if (P.size() > 0) {
+    matchingRmse = std::sqrt(matchingRmse / static_cast<double>(P.size()));
+  }
+
+  return correspondence;
+}
+
+std::optional<std::pair<Eigen::Vector3d, double>> LocalMap::nearestSearch(
+  const Eigen::Vector3d & point,
+  const double maxDistSq) const
+{
   Eigen::Vector3d nearestPoint;
   double nearestDistSq = maxDistSq;
   auto voxelIndex = getVoxelIndex(point);
@@ -125,4 +169,4 @@ std::vector<Eigen::Vector3i> LocalMap::initVoxelOffsets(size_t numVoxels)
 
   return voxelOffsets;
 }
-}
+}  // namespace ESKF_LIO

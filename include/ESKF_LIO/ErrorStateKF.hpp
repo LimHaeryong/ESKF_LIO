@@ -33,9 +33,10 @@ public:
   const std::deque<State> & getStates() const {return states_;}
   double getLastStateTime() const {return states_.back().timestamp;}
 
+  void feedImu(ImuMeasurementPtr imu) {ImuMeasurements_.push_back(std::move(imu));}
   void initState(double lidarEndTime) {states_[0].timestamp = lidarEndTime;}
   void process(ImuMeasurementPtr imu);
-  void update(const LidarMeasurement & lidar);
+  Eigen::Isometry3d update(LidarMeasurementPtr lidar);
 
 private:
   ErrorStateKF() = delete;

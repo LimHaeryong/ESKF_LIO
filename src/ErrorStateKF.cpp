@@ -26,8 +26,9 @@ ErrorStateKF::ErrorStateKF(const YAML::Node & config)
   auto gyro_noise_density = imu_params["gyro_noise_density"].as<double>();
   auto gyro_zero_rate_offset = imu_params["gyro_zero_rate_offset"].as<double>();
 
-  Eigen::Vector3d sigma_accel_noise = Eigen::Map<Eigen::Vector3d>(accel_noise_density.data()) *
-    gravity_magnitude * std::sqrt(imu_update_rate);
+  Eigen::Vector3d sigma_accel_noise =
+    Eigen::Map<Eigen::Vector3d>(accel_noise_density.data()) * gravity_magnitude * std::sqrt(
+    imu_update_rate);
   double sigma_gyro_noise = gyro_noise_density * std::sqrt(imu_update_rate) * M_PI / 180.0;
   double sigma_accel_work = accel_zero_g_offset * std::sqrt(imu_update_rate) * 1e-3 *
     gravity_magnitude;
@@ -79,7 +80,39 @@ void ErrorStateKF::process(ImuMeasurementPtr imu)
   newState.P = F_x_ * prevState.P * F_x_.transpose() + F_i_ * Q_i * F_i_.transpose();
 
   states_.push_back(std::move(newState));
-  ImuMeasurements_.push_back(std::move(imu));
+
+  // std::cout << "pose after process = " << states_.back().position.transpose() << "\n";
+}
+
+Eigen::Isometry3d ErrorStateKF::update(LidarMeasurementPtr lidar)
+{
+  double lidarEndTime = lidar->endTime;
+
+  // Rolls back the state based on the lidarEndTime
+  while (!states_.empty() && states_.back().timestamp > lidarEndTime) {
+    states_.pop_back();
+  }
+
+  // TODO : ICP based Registration and State update
+  State state = states_.back();
+
+
+  // std::cout << "pose after update = " << state.position.transpose() << "\n";
+  states_.push_back(state);
+  // Discards unnecessary imuMeasurements
+  while (!ImuMeasurements_.empty() && ImuMeasurements_.front()->timestamp < lidarEndTime) {
+    ImuMeasurements_.pop_front();
+  }
+
+  for (auto & imu : ImuMeasurements_) {
+    process(imu);
+  }
+
+  Eigen::Isometry3d transform;
+  transform.linear() = state.attitude.toRotationMatrix();
+  transform.translation() = state.position;
+
+  return transform;
 }
 
 }  // namespace ESKF_LIO

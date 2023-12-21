@@ -35,4 +35,10 @@ local_map:
 
 cloud_preprocessor:
   voxel_size: 0.5
-  
+
+registration:
+  max_correspondence_distance_sq: 1.0
+  max_iteration: 50
+  relative_matching_rmse_threshold: 1.0e-6
+  translation_sq_threshold: 1.0e-6
+  cosine_threshold: 0.9999

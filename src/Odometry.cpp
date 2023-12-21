@@ -13,6 +13,7 @@ void Odometry::run()
     if (!imuMeas.empty() && initialized_) {
       while (!imuMeas.empty()) {
         kalmanFilter_->process(imuMeas.front());
+        kalmanFilter_->feedImu(imuMeas.front());
         imuMeas.pop_front();
       }
     }
@@ -35,6 +36,7 @@ void Odometry::run()
       kalmanFilter_->initState(lidarMeas_->endTime);
       while (!imuMeas.empty()) {
         kalmanFilter_->process(imuMeas.front());
+        kalmanFilter_->feedImu(imuMeas.front());
         imuMeas.pop_front();
       }
       continue;
@@ -49,6 +51,9 @@ void Odometry::run()
     const auto & states = kalmanFilter_->getStates();
     cloudPreprocessor_->process(states, lidarMeas_);
 
+    kalmanFilter_->update(lidarMeas_);
+    auto lidarMeas = lidarMeas_;
+    lidarMeas_ = nullptr;
   }
 }
 }  // namespace ESKF_LIO

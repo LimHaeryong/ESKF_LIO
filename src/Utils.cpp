@@ -25,4 +25,31 @@ void transformPoints(
   pointMatrix = transform * pointMatrix;
 }
 
+Eigen::Vector3d rotationMatrixToVector(const Eigen::Matrix3d & R)
+{
+  Eigen::AngleAxisd angleAxis(R);
+  return angleAxis.angle() * angleAxis.axis();
+}
+
+Eigen::Matrix3d rotationVectorToMatrix(const Eigen::Vector3d & r)
+{
+  Eigen::AngleAxisd angleAxis(r.norm(), r.normalized());
+  return angleAxis.toRotationMatrix();
+}
+
+Eigen::Isometry3d se3ToSE3(const Eigen::Vector<double, 6> se3)
+{
+  Eigen::Isometry3d SE3;
+  SE3.translation() = se3.head<3>();
+  SE3.linear() = rotationVectorToMatrix(se3.tail<3>());
+  return SE3;
+}
+Eigen::Vector<double, 6> SE3Tose3(const Eigen::Isometry3d & SE3)
+{
+  Eigen::Vector<double, 6> se3;
+  se3.head<3>() = SE3.translation();
+  se3.tail<3>() = rotationMatrixToVector(SE3.linear());
+  return se3;
+}
+
 }  // namespace ESKF_LIO::Utils
