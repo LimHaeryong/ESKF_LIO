@@ -30,7 +30,9 @@ TEST_F(LocalMapTest, updateLocalMap)
   points.push_back(p1);
   points.push_back(p2);
 
-  localMap->updateLocalMap(points);
+  auto cloud = std::make_shared<open3d::geometry::PointCloud>();
+  cloud->points_ = points;
+  localMap->updateLocalMap(cloud, Eigen::Isometry3d::Identity());
   auto searchResult = localMap->nearestSearch(p1, 100.0);
 
   ASSERT_TRUE(searchResult.has_value());
@@ -61,6 +63,8 @@ TEST_F(LocalMapTest, NearestSearchInVoxel)
 
 TEST_F(LocalMapTest, NearestSearch)
 {
+  
+
   ESKF_LIO::LocalMap::PointVector points;
   Eigen::Vector3d p1(0.1, 0.4, 0.1);
   Eigen::Vector3d p2(-0.001, -0.001, 0.1);
@@ -69,7 +73,10 @@ TEST_F(LocalMapTest, NearestSearch)
   points.push_back(p1);
   points.push_back(p2);
   points.push_back(p3);
-  localMap->updateLocalMap(points);
+
+  auto cloud = std::make_shared<open3d::geometry::PointCloud>();
+  cloud->points_ = points;
+  localMap->updateLocalMap(cloud, Eigen::Isometry3d::Identity());
 
   auto searchResult = localMap->nearestSearch(p4, 100.0);
 

@@ -37,6 +37,12 @@ Eigen::Matrix3d rotationVectorToMatrix(const Eigen::Vector3d & r)
   return angleAxis.toRotationMatrix();
 }
 
+Eigen::Quaterniond rotationVectorToQuaternion(const Eigen::Vector3d& r)
+{
+  Eigen::AngleAxisd angleAxis(r.norm(), r.normalized());
+  return Eigen::Quaterniond(angleAxis);
+}
+
 Eigen::Isometry3d se3ToSE3(const Eigen::Vector<double, 6> se3)
 {
   Eigen::Isometry3d SE3;

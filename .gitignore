@@ -1,2 +1,4 @@
 /thirdparty/*/
 /.vscode
+/resources/*
+!/resources/.gitinit

@@ -29,6 +29,7 @@ add_library(eskf_lio
   src/ErrorStateKF.cpp
   src/LocalMap.cpp
   src/CloudPreprocessor.cpp
+  src/Registration.cpp
   src/Utils.cpp
 )
 
@@ -54,10 +55,28 @@ target_link_libraries(eskf_lio_node
 
 target_compile_definitions(eskf_lio_node PUBLIC
   CONFIG_PATH="${CMAKE_CURRENT_SOURCE_DIR}/config/hilti_config.yaml"
+  CLOUD_SAVE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/resources/map_cloud.pcd"
+  TRAJECTORY_SAVE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/resources/trajectory.json"
+  VISUALIZER_CONFIG_PATH="${CMAKE_CURRENT_SOURCE_DIR}/config/visualizer_config.json"
+)
+
+add_executable(eskf_lio_visualize_map_cloud
+  src/visualize.cpp
+)
+
+target_link_libraries(eskf_lio_visualize_map_cloud
+  Open3D::Open3D
+)
+
+target_compile_definitions(eskf_lio_visualize_map_cloud PUBLIC
+  CLOUD_SAVE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/resources/map_cloud.pcd"
+  TRAJECTORY_SAVE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/resources/trajectory.json"
+  VISUALIZER_CONFIG_PATH="${CMAKE_CURRENT_SOURCE_DIR}/config/visualizer_config.json"
 )
 
 install(TARGETS
   eskf_lio_node
+  eskf_lio_visualize_map_cloud
   DESTINATION lib/${PROJECT_NAME}
 )
 

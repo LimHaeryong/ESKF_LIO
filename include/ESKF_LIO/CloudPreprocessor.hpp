@@ -29,7 +29,8 @@ public:
   }
 
   void process(const std::deque<ErrorStateKF::State> & states, LidarMeasurementPtr lidarMeas) const;
-
+  void voxelDownsample(std::vector<Eigen::Vector3d> & points) const;
+  
 private:
   CloudPreprocessor() = delete;
 
@@ -37,7 +38,7 @@ private:
     const std::deque<ErrorStateKF::State> & states, const std::vector<double> & pointTime,
     std::vector<Eigen::Vector3d> & points) const;
 
-  void voxelDownsample(std::vector<Eigen::Vector3d> & points) const;
+  
   Eigen::Vector3i getVoxelIndex(const Eigen::Vector3d & point) const;
 
   double voxelSize_;
