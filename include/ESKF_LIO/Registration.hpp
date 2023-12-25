@@ -17,22 +17,27 @@ public:
   using PointVector = typename std::vector<Eigen::Vector3d>;
   using Correspondence = typename std::pair<PointVector, PointVector>;
 
-  ICP(const YAML::Node& config)
-    : maxCorrespondenceDistSquared_(config["registration"]["max_correspondence_distance_sq"].as<double>())
+  ICP(const YAML::Node & config)
+  : maxCorrespondenceDistSquared_(
+      config["registration"]["max_correspondence_distance_sq"].as<double>())
     , maxIteration_(config["registration"]["max_iteration"].as<int>())
-    , relativeMatchingRmseThreshold_(config["registration"]["relative_matching_rmse_threshold"].as<double>())
+    ,
+    relativeMatchingRmseThreshold_(
+      config["registration"]["relative_matching_rmse_threshold"].as<double>())
     , translationSquaredThreshold_(config["registration"]["translation_sq_threshold"].as<double>())
     , cosineThreshold_(config["registration"]["cosine_threshold"].as<double>())
   {
   }
 
-  Eigen::Isometry3d align(const PointCloud& cloud, const LocalMap& localMap, const Eigen::Isometry3d& guess);
+  Eigen::Isometry3d align(
+    const PointCloud & cloud, const LocalMap & localMap,
+    const Eigen::Isometry3d & guess);
 
 private:
   ICP() = delete;
 
-  Eigen::Isometry3d computeTransform(Correspondence& correspondence) const;
-  bool convergenceCheck(const Eigen::Isometry3d& transformIter) const;
+  Eigen::Isometry3d computeTransform(Correspondence & correspondence) const;
+  bool convergenceCheck(const Eigen::Isometry3d & transformIter) const;
 
   double maxCorrespondenceDistSquared_;
   int maxIteration_;

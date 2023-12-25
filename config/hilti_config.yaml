@@ -28,8 +28,13 @@ sensors:
       quaternion: [ 0, 0, 0, 1 ]
       translation: [ 0.059, -0.00855, 0.1964 ]
 
+kalman_filter:
+  update:
+    translation_noise: 1.0e-6
+    rotation_noise: 1.0e-6
+
 local_map:
-  voxel_size: 1.0
+  voxel_size: 0.5
   max_num_points_per_voxel: 20
   num_voxel_offsets: 7
 
@@ -38,7 +43,7 @@ cloud_preprocessor:
 
 registration:
   max_correspondence_distance_sq: 1.0
-  max_iteration: 50
+  max_iteration: 100
   relative_matching_rmse_threshold: 1.0e-6
   translation_sq_threshold: 1.0e-6
   cosine_threshold: 0.9999
