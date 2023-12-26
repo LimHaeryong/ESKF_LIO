@@ -1,4 +1,4 @@
 /thirdparty/*/
 /.vscode
-/resources/*
-!/resources/.gitinit
+/resources/*.pcd
+/resources/*.json
