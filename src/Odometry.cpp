@@ -5,33 +5,26 @@ namespace ESKF_LIO
 
 void Odometry::run()
 {
-  while (!exitFlag_)
-  {
-    if (visualize_)
-    {
-      if (localMap_->visualizeLocalMap() == false)
+  while (!exitFlag_) {
+    if (visualize_) {
+      if (localMap_->visualizeLocalMap() == false) {
         setExit();
+      }
     }
-    
+
     // get imu measurement
     auto imuMeas = imuBuffer_->popAll();
 
     // kalmanfilter process
-    if (!imuMeas.empty())
-    {
-      if (initialized_)
-      {
-        while (!imuMeas.empty())
-        {
+    if (!imuMeas.empty()) {
+      if (initialized_) {
+        while (!imuMeas.empty()) {
           kalmanFilter_->process(imuMeas.front());
           kalmanFilter_->feedImu(imuMeas.front());
           imuMeas.pop_front();
         }
-      }
-      else
-      {
-        while (!imuMeas.empty())
-        {
+      } else {
+        while (!imuMeas.empty()) {
           kalmanFilter_->feedImu(imuMeas.front());
           imuMeas.pop_front();
         }
@@ -39,23 +32,19 @@ void Odometry::run()
     }
 
     // get lidar measurement
-    if (lidarMeas_ == nullptr)
-    {
+    if (lidarMeas_ == nullptr) {
       auto lidarMeas = cloudBuffer_->pop();
-      if (lidarMeas.has_value())
-      {
+      if (lidarMeas.has_value()) {
         lidarMeas_ = lidarMeas.value();
       }
     }
 
-    if (lidarMeas_ == nullptr)
-    {
+    if (lidarMeas_ == nullptr) {
       continue;
     }
 
     auto lidarEndTime = lidarMeas_->endTime;
-    if (!initialized_)
-    {
+    if (!initialized_) {
       initialized_ = true;
       kalmanFilter_->initialize(lidarMeas_->endTime);
       auto lidarMeasCopy = lidarMeas_;
@@ -67,12 +56,11 @@ void Odometry::run()
 
     auto lastUpdatedTime = kalmanFilter_->getLastStateTime();
     // wait for next imu
-    if (lastUpdatedTime < lidarEndTime)
-    {
+    if (lastUpdatedTime < lidarEndTime) {
       continue;
     }
 
-    const auto& states = kalmanFilter_->getStates();
+    const auto & states = kalmanFilter_->getStates();
     cloudPreprocessor_->process(states, lidarMeas_);
 
     // kalman filter update

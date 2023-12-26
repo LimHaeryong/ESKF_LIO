@@ -19,8 +19,10 @@ class Odometry
 public:
   using ImuBuffer = typename std::shared_ptr<SynchronizedQueue<ImuMeasurementPtr>>;
   using CloudBuffer = typename std::shared_ptr<SynchronizedQueue<LidarMeasurementPtr>>;
-  Odometry(const YAML::Node& config, ImuBuffer imuBuffer, CloudBuffer cloudBuffer, const open3d::camera::PinholeCameraParameters& visualizerConfig, bool visualize = true)
-    : imuBuffer_(imuBuffer)
+  Odometry(
+    const YAML::Node & config, ImuBuffer imuBuffer, CloudBuffer cloudBuffer,
+    const open3d::camera::PinholeCameraParameters & visualizerConfig, bool visualize = true)
+  : imuBuffer_(imuBuffer)
     , cloudBuffer_(cloudBuffer)
     , kalmanFilter_(std::make_shared<ErrorStateKF>(config))
     , localMap_(std::make_shared<LocalMap>(config, visualizerConfig, visualize))
@@ -30,7 +32,7 @@ public:
   }
 
   void run();
-  void saveMapcloud(const std::string& cloud_path, const std::string& trajectory_path) const
+  void saveMapcloud(const std::string & cloud_path, const std::string & trajectory_path) const
   {
     localMap_->save(cloud_path, trajectory_path);
   }

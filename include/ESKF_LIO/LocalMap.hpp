@@ -23,26 +23,28 @@ public:
   using VoxelHash = typename open3d::utility::hash_eigen<Eigen::Vector3i>;
   using VoxelGrid = typename std::unordered_map<Eigen::Vector3i, Voxel, VoxelHash>;
 
-  LocalMap(const YAML::Node& config, const open3d::camera::PinholeCameraParameters& visualizerConfig,
-           bool visualize = true)
-    : voxelSize_(config["local_map"]["voxel_size"].as<double>())
+  LocalMap(
+    const YAML::Node & config, const open3d::camera::PinholeCameraParameters & visualizerConfig,
+    bool visualize = true)
+  : voxelSize_(config["local_map"]["voxel_size"].as<double>())
     , maxNumPointsPerVoxel_(config["local_map"]["max_num_points_per_voxel"].as<size_t>())
     , voxelOffsets_(initVoxelOffsets(config["local_map"]["num_voxel_offsets"].as<size_t>()))
     , visualizerConfig_(visualizerConfig)
     , visualize_(visualize)
   {
-    if (visualize)
-    {
+    if (visualize) {
       visualizer_ = std::make_shared<open3d::visualization::Visualizer>();
       visualizer_->CreateVisualizerWindow("Local Map", 1600, 900);
       visualizer_->GetRenderOption().SetPointSize(1.0);
-      visualizer_->GetRenderOption().background_color_ = { 0, 0, 0 };
+      visualizer_->GetRenderOption().background_color_ = {0, 0, 0};
       visualizer_->GetViewControl().ConvertFromPinholeCameraParameters(visualizerConfig);
     }
   }
 
-  LocalMap(double voxelSize, size_t maxNumPointsPerVoxel, size_t numVoxelOffsets, bool visualize = false)
-    : voxelSize_(voxelSize)
+  LocalMap(
+    double voxelSize, size_t maxNumPointsPerVoxel, size_t numVoxelOffsets,
+    bool visualize = false)
+  : voxelSize_(voxelSize)
     , maxNumPointsPerVoxel_(maxNumPointsPerVoxel)
     , voxelOffsets_(initVoxelOffsets(numVoxelOffsets))
     , visualize_(visualize)
@@ -54,34 +56,38 @@ public:
     size_t maxNumPoints;
     PointVector points;
 
-    Voxel(size_t maxNumPoints, const Eigen::Vector3d& point) : maxNumPoints(maxNumPoints)
+    Voxel(size_t maxNumPoints, const Eigen::Vector3d & point)
+    : maxNumPoints(maxNumPoints)
     {
       points.reserve(maxNumPoints);
       points.push_back(point);
     }
 
-    void addPoint(const Eigen::Vector3d& point)
+    void addPoint(const Eigen::Vector3d & point)
     {
-      if (points.size() < maxNumPoints)
-      {
+      if (points.size() < maxNumPoints) {
         points.push_back(point);
       }
     }
 
-    std::optional<std::pair<Eigen::Vector3d, double>> nearestSearchInVoxel(const Eigen::Vector3d& point,
-                                                                           const double maxDistSq) const;
+    std::optional<std::pair<Eigen::Vector3d, double>> nearestSearchInVoxel(
+      const Eigen::Vector3d & point,
+      const double maxDistSq) const;
   };
 
-  void updateLocalMap(PointCloudPtr cloud, const Eigen::Isometry3d& transform);
-  Correspondence correspondenceMatching(const PointVector& points, const double maxDistSq, double& matchingRmse) const;
-  std::optional<std::pair<Eigen::Vector3d, double>> nearestSearch(const Eigen::Vector3d& point,
-                                                                  const double maxDistSq) const;
+  void updateLocalMap(PointCloudPtr cloud, const Eigen::Isometry3d & transform);
+  Correspondence correspondenceMatching(
+    const PointVector & points, const double maxDistSq,
+    double & matchingRmse) const;
+  std::optional<std::pair<Eigen::Vector3d, double>> nearestSearch(
+    const Eigen::Vector3d & point,
+    const double maxDistSq) const;
 
   bool visualizeLocalMap() const;
-  void save(const std::string& cloud_path, const std::string& trajectory_path) const;
+  void save(const std::string & cloud_path, const std::string & trajectory_path) const;
 
 private:
-  Eigen::Vector3i getVoxelIndex(const Eigen::Vector3d& point) const;
+  Eigen::Vector3i getVoxelIndex(const Eigen::Vector3d & point) const;
 
   double voxelSize_;
   size_t maxNumPointsPerVoxel_;

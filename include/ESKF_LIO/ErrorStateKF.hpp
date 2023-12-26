@@ -38,7 +38,7 @@ public:
       std::cout << "vel = " << velocity.transpose() << "\n";
       std::cout << "attitude = " << attitude.coeffs().transpose() << "\n";
       std::cout << "bias_a = " << biasAccel.transpose() << "\n";
-      std::cout << "bias_g = " << biasGyro.transpose() << "\n"; 
+      std::cout << "bias_g = " << biasGyro.transpose() << "\n";
       std::cout << "gravity = " << gravity.transpose() << "\n";
     }
   };
@@ -50,12 +50,12 @@ public:
   void feedImu(ImuMeasurementPtr imu) {ImuMeasurements_.push_back(std::move(imu));}
   void initialize(double lidarEndTime);
   void process(ImuMeasurementPtr imu);
-  Eigen::Isometry3d update(const LidarMeasurement& lidar, const LocalMap& localMap);
+  Eigen::Isometry3d update(const LidarMeasurement & lidar, const LocalMap & localMap);
 
 private:
   ErrorStateKF() = delete;
-  void injectError(State& state, const Vec18d& errorState) const;
-  void reset(State& state, const Vec18d& errorState);
+  void injectError(State & state, const Vec18d & errorState) const;
+  void reset(State & state, const Vec18d & errorState);
 
   std::shared_ptr<ICP> icp_;
 

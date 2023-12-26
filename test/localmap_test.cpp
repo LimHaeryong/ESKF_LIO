@@ -63,7 +63,7 @@ TEST_F(LocalMapTest, NearestSearchInVoxel)
 
 TEST_F(LocalMapTest, NearestSearch)
 {
-  
+
 
   ESKF_LIO::LocalMap::PointVector points;
   Eigen::Vector3d p1(0.1, 0.4, 0.1);

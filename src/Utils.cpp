@@ -37,7 +37,7 @@ Eigen::Matrix3d rotationVectorToMatrix(const Eigen::Vector3d & r)
   return angleAxis.toRotationMatrix();
 }
 
-Eigen::Quaterniond rotationVectorToQuaternion(const Eigen::Vector3d& r)
+Eigen::Quaterniond rotationVectorToQuaternion(const Eigen::Vector3d & r)
 {
   Eigen::AngleAxisd angleAxis(r.norm(), r.normalized());
   return Eigen::Quaterniond(angleAxis);

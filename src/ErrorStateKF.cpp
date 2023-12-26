@@ -5,7 +5,8 @@
 
 namespace ESKF_LIO
 {
-ErrorStateKF::ErrorStateKF(const YAML::Node& config) : icp_(std::make_shared<ICP>(config))
+ErrorStateKF::ErrorStateKF(const YAML::Node & config)
+: icp_(std::make_shared<ICP>(config))
 {
   constexpr double GRAVITY_MAGNITUDE = 9.81;
 
@@ -27,7 +28,8 @@ ErrorStateKF::ErrorStateKF(const YAML::Node& config) : icp_(std::make_shared<ICP
   auto gyroZeroRateOffset = imuParams["gyro_zero_rate_offset"].as<double>();
 
   Eigen::Vector3d sigmaAccelNoise =
-      Eigen::Map<Eigen::Vector3d>(accelNoiseDensity.data()) * GRAVITY_MAGNITUDE * std::sqrt(imuUpdateRate);
+    Eigen::Map<Eigen::Vector3d>(accelNoiseDensity.data()) * GRAVITY_MAGNITUDE * std::sqrt(
+    imuUpdateRate);
   double sigmaGyroNoise = gyroNoiseDensity * std::sqrt(imuUpdateRate) * M_PI / 180.0;
   double sigmaAccelWork = accelZeroGOffset * std::sqrt(imuUpdateRate) * 1e-3 * GRAVITY_MAGNITUDE;
   double sigmaGyroWork = gyroZeroRateOffset * std::sqrt(imuUpdateRate) * M_PI / 180.0;
@@ -57,28 +59,25 @@ ErrorStateKF::ErrorStateKF(const YAML::Node& config) : icp_(std::make_shared<ICP
 
 void ErrorStateKF::initialize(double lidarEndTime)
 {
-  auto& initState = states_[0];
+  auto & initState = states_[0];
   initState.timestamp = lidarEndTime;
 
   // Discards unnecessary imuMeasurements
-  while (!ImuMeasurements_.empty() && ImuMeasurements_.front()->timestamp < lidarEndTime)
-  {
+  while (!ImuMeasurements_.empty() && ImuMeasurements_.front()->timestamp < lidarEndTime) {
     ImuMeasurements_.pop_front();
   }
 
   // process remaining imuMeasurements
-  for (auto& imu : ImuMeasurements_)
-  {
+  for (auto & imu : ImuMeasurements_) {
     process(imu);
   }
 }
 
 void ErrorStateKF::process(ImuMeasurementPtr imu)
 {
-  const auto& prevState = states_.back();
+  const auto & prevState = states_.back();
   double dt = imu->timestamp - prevState.timestamp;
-  if (dt < 0.0)
-  {
+  if (dt < 0.0) {
     return;
   }
   State newState = prevState;
@@ -86,10 +85,13 @@ void ErrorStateKF::process(ImuMeasurementPtr imu)
   Eigen::Matrix3d R = prevState.attitude.toRotationMatrix();
   Eigen::Vector3d acceleration = imu->acceleration - prevState.biasAccel;
   Eigen::Vector3d angularVelocity = imu->angularVelocity - prevState.biasGyro;
-  Eigen::Quaterniond angleDiff(Eigen::AngleAxisd(angularVelocity.norm() * dt, angularVelocity.normalized()));
+  Eigen::Quaterniond angleDiff(Eigen::AngleAxisd(
+      angularVelocity.norm() * dt,
+      angularVelocity.normalized()));
 
   double dt2 = dt * dt;
-  newState.position = prevState.position + prevState.velocity * dt + 0.5 * (R * acceleration + prevState.gravity) * dt2;
+  newState.position = prevState.position + prevState.velocity * dt + 0.5 *
+    (R * acceleration + prevState.gravity) * dt2;
   newState.velocity = prevState.velocity + (R * acceleration + prevState.gravity) * dt;
   newState.attitude = prevState.attitude * angleDiff;
 
@@ -111,20 +113,18 @@ void ErrorStateKF::process(ImuMeasurementPtr imu)
   // newState.printState();
 }
 
-Eigen::Isometry3d ErrorStateKF::update(const LidarMeasurement& lidar, const LocalMap& localMap)
+Eigen::Isometry3d ErrorStateKF::update(const LidarMeasurement & lidar, const LocalMap & localMap)
 {
   const double lidarEndTime = lidar.endTime;
 
   // Rolls back the state before the lidarEndTime
-  while (!states_.empty() && states_.back().timestamp > lidarEndTime)
-  {
+  while (!states_.empty() && states_.back().timestamp > lidarEndTime) {
     states_.pop_back();
   }
 
-  // TODO : ICP based Registration and State update
   State newState = states_.back();
   newState.timestamp = lidarEndTime;
-  const State& prevState = states_.back();
+  const State & prevState = states_.back();
   Eigen::Isometry3d guess;
   guess.linear() = prevState.attitude.toRotationMatrix();
   guess.translation() = prevState.position;
@@ -132,8 +132,10 @@ Eigen::Isometry3d ErrorStateKF::update(const LidarMeasurement& lidar, const Loca
 
   Eigen::Vector<double, 6> residual;
   residual.head<3>() = observation.translation() - guess.translation();
-  residual.tail<3>() = Utils::rotationMatrixToVector(guess.linear().transpose() * observation.linear());
-  Eigen::Matrix<double, 18, 6> K = prevState.P * H_.transpose() * (H_ * prevState.P * H_.transpose() + V_).inverse();
+  residual.tail<3>() = Utils::rotationMatrixToVector(
+    guess.linear().transpose() * observation.linear());
+  Eigen::Matrix<double, 18,
+    6> K = prevState.P * H_.transpose() * (H_ * prevState.P * H_.transpose() + V_).inverse();
   Eigen::Vector<double, 18> errorState = K * residual;
 
   Mat18d I_KH = Mat18d::Identity() - K * H_;
@@ -144,14 +146,12 @@ Eigen::Isometry3d ErrorStateKF::update(const LidarMeasurement& lidar, const Loca
 
   states_.push_back(newState);
   // Discards imuMeasurements before the lidarEndTime
-  while (!ImuMeasurements_.empty() && ImuMeasurements_.front()->timestamp < lidarEndTime)
-  {
+  while (!ImuMeasurements_.empty() && ImuMeasurements_.front()->timestamp < lidarEndTime) {
     ImuMeasurements_.pop_front();
   }
 
   // process remaining imuMeasurements
-  for (auto& imu : ImuMeasurements_)
-  {
+  for (auto & imu : ImuMeasurements_) {
     process(imu);
   }
 
@@ -162,7 +162,7 @@ Eigen::Isometry3d ErrorStateKF::update(const LidarMeasurement& lidar, const Loca
   return transform;
 }
 
-void ErrorStateKF::injectError(State& state, const Vec18d& errorState) const
+void ErrorStateKF::injectError(State & state, const Vec18d & errorState) const
 {
   state.position += errorState.block<3, 1>(0, 0);
   state.velocity += errorState.block<3, 1>(3, 0);
@@ -172,7 +172,7 @@ void ErrorStateKF::injectError(State& state, const Vec18d& errorState) const
   state.gravity += errorState.block<3, 1>(15, 0);
 }
 
-void ErrorStateKF::reset(State& state, const Vec18d& errorState)
+void ErrorStateKF::reset(State & state, const Vec18d & errorState)
 {
   Eigen::Vector3d rotationError = errorState.block<3, 1>(6, 0);
   Eigen::Matrix3d skew = Utils::skewSymmetric(rotationError);
