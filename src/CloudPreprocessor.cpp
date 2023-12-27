@@ -13,8 +13,11 @@ void CloudPreprocessor::process(
   auto & cloud_points = lidarMeas->cloud->points_;
   // transform lidar points to imu coordinate
   Utils::transformPoints(cloud_points, T_il_);
-
-  deskew(states, lidarMeas->pointTime, cloud_points);
+  if(!states.empty())
+  {
+    deskew(states, lidarMeas->pointTime, cloud_points);
+  }
+  
   lidarMeas->pointTime.clear();
   lidarMeas->pointTime.shrink_to_fit();
 

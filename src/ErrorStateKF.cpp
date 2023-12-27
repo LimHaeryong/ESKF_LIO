@@ -110,7 +110,6 @@ void ErrorStateKF::process(ImuMeasurementPtr imu)
 
   states_.push_back(std::move(newState));
 
-  // newState.printState();
 }
 
 Eigen::Isometry3d ErrorStateKF::update(const LidarMeasurement & lidar, const LocalMap & localMap)

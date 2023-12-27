@@ -49,7 +49,7 @@ void Odometry::run()
       kalmanFilter_->initialize(lidarMeas_->endTime);
       auto lidarMeasCopy = lidarMeas_;
       lidarMeas_ = nullptr;
-      cloudPreprocessor_->voxelDownsample(lidarMeasCopy->cloud->points_);
+      cloudPreprocessor_->process({}, lidarMeasCopy);
       localMap_->updateLocalMap(std::move(lidarMeasCopy->cloud), Eigen::Isometry3d::Identity());
       continue;
     }
