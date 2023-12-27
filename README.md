@@ -18,7 +18,7 @@ Key Features:
 - Eigen3
 - OpenMP
 
-### Install HILTI-OXFORD Dataset
+### Download HILTI-OXFORD Dataset
 [Hilti-SLAM-Challenge-2022](https://hilti-challenge.com/dataset-2022.html)
 
 - Download [Exp21 Outside Building](https://storage.googleapis.com/hsc2022/exp21_outside_building.bag)
