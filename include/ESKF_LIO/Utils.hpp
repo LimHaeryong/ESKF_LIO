@@ -3,6 +3,8 @@
 
 #include <Eigen/Dense>
 
+#include "ESKF_LIO/Types.hpp"
+
 namespace ESKF_LIO::Utils
 {
 Eigen::Matrix3d skewSymmetric(const Eigen::Vector3d & vec);
@@ -17,6 +19,11 @@ Eigen::Matrix3d rotationVectorToMatrix(const Eigen::Vector3d & r);
 Eigen::Quaterniond rotationVectorToQuaternion(const Eigen::Vector3d & r);
 Eigen::Isometry3d se3ToSE3(const Eigen::Vector<double, 6> & se3);
 Eigen::Vector<double, 6> SE3Tose3(const Eigen::Isometry3d & SE3);
+
+Eigen::Isometry3d interpolateSE3(
+  const ESKF_LIO::State & s1, const ESKF_LIO::State & s2,
+  const double t);
+
 
 }  // namespace ESKF_LIO::Utils
 

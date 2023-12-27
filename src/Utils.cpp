@@ -58,4 +58,16 @@ Eigen::Vector<double, 6> SE3Tose3(const Eigen::Isometry3d & SE3)
   return se3;
 }
 
+Eigen::Isometry3d interpolateSE3(
+  const ESKF_LIO::State & s1, const ESKF_LIO::State & s2,
+  const double t)
+{
+  double factor = (t - s1.timestamp) / (s2.timestamp - s1.timestamp + 1e-6);
+  Eigen::Isometry3d SE3;
+  SE3.linear() = s1.attitude.slerp(factor, s2.attitude).toRotationMatrix();
+  SE3.translation() = s1.position + factor * (s2.position - s1.position);
+
+  return SE3;
+}
+
 }  // namespace ESKF_LIO::Utils

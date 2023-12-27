@@ -28,14 +28,14 @@ public:
     T_il_.translation() = trans;
   }
 
-  void process(const std::deque<ErrorStateKF::State> & states, LidarMeasurementPtr lidarMeas) const;
+  void process(const std::deque<State> & states, LidarMeasurementPtr lidarMeas) const;
   void voxelDownsample(std::vector<Eigen::Vector3d> & points) const;
 
 private:
   CloudPreprocessor() = delete;
 
   void deskew(
-    const std::deque<ErrorStateKF::State> & states, const std::vector<double> & pointTime,
+    const std::deque<State> & states, const std::vector<double> & pointTime,
     std::vector<Eigen::Vector3d> & points) const;
 
 

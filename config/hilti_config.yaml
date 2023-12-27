@@ -36,7 +36,7 @@ kalman_filter:
 local_map:
   voxel_size: 0.5
   max_num_points_per_voxel: 20
-  num_voxel_offsets: 7
+  num_voxel_offsets: 27
 
 cloud_preprocessor:
   voxel_size: 0.5

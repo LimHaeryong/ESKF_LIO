@@ -6,7 +6,7 @@
 namespace ESKF_LIO
 {
 void CloudPreprocessor::process(
-  const std::deque<ErrorStateKF::State> & states,
+  const std::deque<State> & states,
   LidarMeasurementPtr lidarMeas) const
 {
 
@@ -22,7 +22,7 @@ void CloudPreprocessor::process(
 }
 
 void CloudPreprocessor::deskew(
-  const std::deque<ErrorStateKF::State> & states, const std::vector<double> & pointTime,
+  const std::deque<State> & states, const std::vector<double> & pointTime,
   std::vector<Eigen::Vector3d> & points) const
 {
   size_t numPoints = points.size();
@@ -31,21 +31,23 @@ void CloudPreprocessor::deskew(
 
   double lidarEndTime = pointTime.back();
 
-  auto lastState = states.crbegin();
-  for (; lastState != states.crend(); ++lastState) {
-    if (lastState->timestamp > lidarEndTime) {
+  auto stateBeforeLidarEnd = states.crbegin();
+  for (; stateBeforeLidarEnd != states.crend(); ++stateBeforeLidarEnd) {
+    if (stateBeforeLidarEnd->timestamp > lidarEndTime) {
       continue;
     }
 
     break;
   }
 
-  Eigen::Isometry3d lastPoseInv;
-  lastPoseInv.linear() = lastState->attitude.toRotationMatrix();
-  lastPoseInv.translation() = lastState->position;
-  lastPoseInv = lastPoseInv.inverse();
+  auto stateAfterLidarEnd = stateBeforeLidarEnd - 1;
 
-  for (auto state = states.cbegin(); state != lastState.base(); ++state) {
+  Eigen::Isometry3d SE3LidarEndInv = Utils::interpolateSE3(
+    *stateBeforeLidarEnd,
+    *stateAfterLidarEnd, lidarEndTime);
+  SE3LidarEndInv = SE3LidarEndInv.inverse();
+
+  for (auto state = states.cbegin(); state != stateAfterLidarEnd.base(); ++state) {
     pointStartIndex = pointEndIndex;
     size_t i = pointStartIndex;
     while (i < numPoints) {
@@ -64,7 +66,7 @@ void CloudPreprocessor::deskew(
     Eigen::Isometry3d transform;
     transform.linear() = state->attitude.toRotationMatrix();
     transform.translation() = state->position;
-    transform = lastPoseInv * transform;
+    transform = SE3LidarEndInv * transform;
 
     Utils::transformPoints(points, transform, pointStartIndex, pointEndIndex - pointStartIndex);
   }

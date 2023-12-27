@@ -20,28 +20,6 @@ public:
   using Mat12d = typename Eigen::Matrix<double, 12, 12>;
   using Mat6d = typename Eigen::Matrix<double, 6, 6>;
 
-  struct State
-  {
-    double timestamp;
-    Eigen::Vector3d position = Eigen::Vector3d::Zero();
-    Eigen::Vector3d velocity = Eigen::Vector3d::Zero();
-    Eigen::Quaterniond attitude = Eigen::Quaterniond::Identity();
-    Eigen::Vector3d biasAccel = Eigen::Vector3d::Zero();
-    Eigen::Vector3d biasGyro = Eigen::Vector3d::Zero();
-    Eigen::Vector3d gravity = Eigen::Vector3d::Zero();
-    Mat18d P = 1e-3 * Mat18d::Identity();
-
-    void printState() const
-    {
-      std::cout << "State at " << timestamp << "\n";
-      std::cout << "pose = " << position.transpose() << "\n";
-      std::cout << "vel = " << velocity.transpose() << "\n";
-      std::cout << "attitude = " << attitude.coeffs().transpose() << "\n";
-      std::cout << "bias_a = " << biasAccel.transpose() << "\n";
-      std::cout << "bias_g = " << biasGyro.transpose() << "\n";
-      std::cout << "gravity = " << gravity.transpose() << "\n";
-    }
-  };
 
   ErrorStateKF(const YAML::Node & config);
   const std::deque<State> & getStates() const {return states_;}
