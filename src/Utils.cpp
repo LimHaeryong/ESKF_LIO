@@ -25,6 +25,13 @@ void transformPoints(
   pointMatrix = transform * pointMatrix;
 }
 
+void rotateNormals(std::vector<Eigen::Vector3d> & normals, const Eigen::Matrix3d & rotation)
+{
+  Eigen::Map<Eigen::Matrix<double, 3, Eigen::Dynamic>> normalMatrix(normals[0].data(), 3,
+    normals.size());
+  normalMatrix = rotation * normalMatrix;
+}
+
 Eigen::Vector3d rotationMatrixToVector(const Eigen::Matrix3d & R)
 {
   Eigen::AngleAxisd angleAxis(R);
@@ -43,7 +50,7 @@ Eigen::Quaterniond rotationVectorToQuaternion(const Eigen::Vector3d & r)
   return Eigen::Quaterniond(angleAxis);
 }
 
-Eigen::Isometry3d se3ToSE3(const Eigen::Vector<double, 6> se3)
+Eigen::Isometry3d se3ToSE3(const Eigen::Vector<double, 6> & se3)
 {
   Eigen::Isometry3d SE3;
   SE3.translation() = se3.head<3>();

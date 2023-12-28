@@ -3,6 +3,7 @@
 
 #include <array>
 #include <optional>
+#include <tuple>
 #include <unordered_map>
 
 #include <yaml-cpp/yaml.h>
@@ -17,7 +18,8 @@ public:
   struct Voxel;
 
   using PointVector = typename std::vector<Eigen::Vector3d>;
-  using Correspondence = typename std::pair<PointVector, PointVector>;
+  using NormalVector = typename std::vector<Eigen::Vector3d>;
+  using Correspondence = typename std::tuple<PointVector, NormalVector, PointVector, NormalVector>;
   using VoxelHash = typename open3d::utility::hash_eigen<Eigen::Vector3i>;
   using VoxelGrid = typename std::unordered_map<Eigen::Vector3i, Voxel, VoxelHash>;
 
@@ -53,31 +55,35 @@ public:
   {
     size_t maxNumPoints;
     PointVector points;
+    NormalVector normals;
 
-    Voxel(size_t maxNumPoints, const Eigen::Vector3d & point)
+    Voxel(size_t maxNumPoints, const Eigen::Vector3d & point, const Eigen::Vector3d & normal)
     : maxNumPoints(maxNumPoints)
     {
       points.reserve(maxNumPoints);
+      normals.reserve(maxNumPoints);
       points.push_back(point);
+      normals.push_back(normal);
     }
 
-    void addPoint(const Eigen::Vector3d & point)
+    void addPoint(const Eigen::Vector3d & point, const Eigen::Vector3d & normal)
     {
       if (points.size() < maxNumPoints) {
         points.push_back(point);
+        normals.push_back(normal);
       }
     }
 
-    std::optional<std::pair<Eigen::Vector3d, double>> nearestSearchInVoxel(
+    std::optional<std::tuple<Eigen::Vector3d, Eigen::Vector3d, double>> nearestSearchInVoxel(
       const Eigen::Vector3d & point,
       const double maxDistSq) const;
   };
 
   void updateLocalMap(PointCloudPtr cloud, const Eigen::Isometry3d & transform);
   Correspondence correspondenceMatching(
-    const PointVector & points, const double maxDistSq,
+    const PointVector & points, const NormalVector & normals, const double maxDistSq,
     double & matchingRmse) const;
-  std::optional<std::pair<Eigen::Vector3d, double>> nearestSearch(
+  std::optional<std::tuple<Eigen::Vector3d, Eigen::Vector3d, double>> nearestSearch(
     const Eigen::Vector3d & point,
     const double maxDistSq) const;
 

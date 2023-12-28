@@ -13,15 +13,14 @@ void CloudPreprocessor::process(
   auto & cloud_points = lidarMeas->cloud->points_;
   // transform lidar points to imu coordinate
   Utils::transformPoints(cloud_points, T_il_);
-  if(!states.empty())
-  {
+  if (!states.empty()) {
     deskew(states, lidarMeas->pointTime, cloud_points);
   }
-  
   lidarMeas->pointTime.clear();
   lidarMeas->pointTime.shrink_to_fit();
-
-  voxelDownsample(cloud_points);
+  lidarMeas->cloud->EstimateNormals();
+  auto & cloud_normals = lidarMeas->cloud->normals_;
+  voxelDownsample(cloud_points, cloud_normals);
 }
 
 void CloudPreprocessor::deskew(
@@ -75,9 +74,11 @@ void CloudPreprocessor::deskew(
   }
 }
 
-void CloudPreprocessor::voxelDownsample(std::vector<Eigen::Vector3d> & points) const
+void CloudPreprocessor::voxelDownsample(
+  std::vector<Eigen::Vector3d> & points,
+  std::vector<Eigen::Vector3d> & normals) const
 {
-  std::vector<Eigen::Vector3d> output;
+  std::vector<Eigen::Vector3d> pointsDown, normalsDown;
   std::unordered_map<Eigen::Vector3i, int, open3d::utility::hash_eigen<Eigen::Vector3i>> voxelGrid;
 
   for (size_t i = 0; i < points.size(); ++i) {
@@ -87,11 +88,14 @@ void CloudPreprocessor::voxelDownsample(std::vector<Eigen::Vector3d> & points) c
     }
   }
 
-  output.reserve(voxelGrid.size());
+  pointsDown.reserve(voxelGrid.size());
+  normalsDown.reserve(voxelGrid.size());
   for (const auto & [_, i] : voxelGrid) {
-    output.push_back(points[i]);
+    pointsDown.push_back(points[i]);
+    normalsDown.push_back(normals[i]);
   }
-  std::swap(points, output);
+  std::swap(points, pointsDown);
+  std::swap(normals, normalsDown);
 }
 
 Eigen::Vector3i CloudPreprocessor::getVoxelIndex(const Eigen::Vector3d & point) const
