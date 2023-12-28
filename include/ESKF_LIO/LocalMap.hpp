@@ -2,9 +2,7 @@
 #define ESKF_LIO_LOCAL_MAP_HPP_
 
 #include <array>
-#include <mutex>
 #include <optional>
-#include <shared_mutex>
 #include <unordered_map>
 
 #include <yaml-cpp/yaml.h>
@@ -92,9 +90,6 @@ private:
   double voxelSize_;
   size_t maxNumPointsPerVoxel_;
   VoxelGrid voxelGrid_;
-
-  mutable std::mutex visualizerMutex_;
-  mutable std::shared_mutex voxelGridMutex_;
 
   std::vector<Eigen::Vector3i> initVoxelOffsets(size_t numVoxels);
   const std::vector<Eigen::Vector3i> voxelOffsets_;

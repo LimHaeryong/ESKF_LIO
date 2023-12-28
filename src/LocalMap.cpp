@@ -40,15 +40,12 @@ void LocalMap::updateLocalMap(PointCloudPtr cloud, const Eigen::Isometry3d & tra
     auto coord =
       open3d::geometry::TriangleMesh::CreateCoordinateFrame(3.0, transform.translation());
     coord->Rotate(transform.linear(), transform.translation());
-
-    std::unique_lock<std::mutex> visualizerLock(visualizerMutex_);
     visualizer_->ClearGeometries();
     visualizer_->AddGeometry(cloud);
     visualizer_->AddGeometry(coord);
     visualizer_->GetViewControl().ConvertFromPinholeCameraParameters(visualizerConfig_);
   }
 
-  std::unique_lock<std::shared_mutex> voxelGridLock(voxelGridMutex_);
   for (const auto & point : points) {
     auto voxelIndex = getVoxelIndex(point);
     auto found = voxelGrid_.find(voxelIndex);
@@ -65,7 +62,6 @@ LocalMap::Correspondence LocalMap::correspondenceMatching(
   const PointVector & points, const double maxDistSq,
   double & matchingRmse) const
 {
-  std::shared_lock<std::shared_mutex> voxelGridLock(voxelGridMutex_);
   Correspondence correspondence;
   auto & [P, Q] = correspondence;
   P.reserve(points.size());
@@ -191,7 +187,6 @@ std::vector<Eigen::Vector3i> LocalMap::initVoxelOffsets(size_t numVoxels)
 
 bool LocalMap::visualizeLocalMap() const
 {
-  std::unique_lock<std::mutex> visualizerLock(visualizerMutex_);
   if (!visualizer_->PollEvents()) {
     return false;  // exit sign
   }
