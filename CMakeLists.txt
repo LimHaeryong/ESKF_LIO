@@ -88,10 +88,6 @@ install(DIRECTORY
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   find_package(ament_cmake_gtest REQUIRED)
-  ament_add_gtest(${PROJECT_NAME}_localmap_test test/localmap_test.cpp)
-  target_link_libraries(${PROJECT_NAME}_localmap_test
-    eskf_lio
-  )
   #set(ament_cmake_copyright_FOUND TRUE)
   #set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()

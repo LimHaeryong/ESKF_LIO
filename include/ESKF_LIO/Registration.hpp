@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <numeric>
+#include <tuple>
 
 #include <yaml-cpp/yaml.h>
 #include <Eigen/Dense>
@@ -15,7 +16,8 @@ class ICP
 {
 public:
   using PointVector = typename std::vector<Eigen::Vector3d>;
-  using Correspondence = typename std::pair<PointVector, PointVector>;
+  using NormalVector = typename std::vector<Eigen::Vector3d>;
+  using Correspondence = typename std::tuple<PointVector, NormalVector, PointVector, NormalVector>;
 
   ICP(const YAML::Node & config)
   : maxCorrespondenceDistSquared_(
@@ -39,6 +41,12 @@ private:
   Eigen::Isometry3d computeTransform(Correspondence & correspondence) const;
   bool convergenceCheck(const Eigen::Isometry3d & transformIter) const;
 
+  std::pair<Eigen::Matrix<double, 6, 6>, Eigen::Vector<double, 6>>
+  computeJTJAndJTr(
+    const Eigen::Vector3d & srcPoint,
+    const Eigen::Vector3d & mapPoint,
+    const Eigen::Vector3d & normal) const;
+
   double maxCorrespondenceDistSquared_;
   int maxIteration_;
   double relativeMatchingRmseThreshold_;
@@ -48,7 +56,6 @@ private:
   bool converged_ = false;
   double matchingRmse_ = std::numeric_limits<double>::max();
   double matchingRmsePrev_ = std::numeric_limits<double>::max();
-  std::pair<PointVector, PointVector> correspondence_;
 };
 
 }  // namespace ESKF_LIO

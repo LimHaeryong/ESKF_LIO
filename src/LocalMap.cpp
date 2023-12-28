@@ -6,23 +6,26 @@
 
 namespace ESKF_LIO
 {
-std::optional<std::pair<Eigen::Vector3d, double>> LocalMap::Voxel::nearestSearchInVoxel(
+std::optional<std::tuple<Eigen::Vector3d, Eigen::Vector3d,
+  double>> LocalMap::Voxel::nearestSearchInVoxel(
   const Eigen::Vector3d & point,
   const double maxDistSq) const
 {
   Eigen::Vector3d nearestPoint = Eigen::Vector3d::Zero();
+  Eigen::Vector3d nearestNormal = Eigen::Vector3d::Zero();
   double nearestDistSq = maxDistSq;
 
-  for (const auto & voxelPoint : points) {
-    double distSq = (point - voxelPoint).squaredNorm();
+  for (size_t i = 0; i < points.size(); ++i) {
+    double distSq = (points[i] - point).squaredNorm();
     if (distSq < nearestDistSq) {
       nearestDistSq = distSq;
-      nearestPoint = voxelPoint;
+      nearestPoint = points[i];
+      nearestNormal = normals[i];
     }
   }
 
   if (nearestDistSq < maxDistSq) {
-    return std::make_pair(nearestPoint, nearestDistSq);
+    return std::make_tuple(nearestPoint, nearestNormal, nearestDistSq);
   } else {
     return std::nullopt;
   }
@@ -31,7 +34,9 @@ std::optional<std::pair<Eigen::Vector3d, double>> LocalMap::Voxel::nearestSearch
 void LocalMap::updateLocalMap(PointCloudPtr cloud, const Eigen::Isometry3d & transform)
 {
   auto & points = cloud->points_;
+  auto & normals = cloud->normals_;
   Utils::transformPoints(points, transform);
+  Utils::rotateNormals(normals, transform.linear());
   open3d::camera::PinholeCameraParameters parameter;
   parameter.extrinsic_ = transform.matrix();
   trajectory_.parameters_.push_back(parameter);
@@ -46,64 +51,73 @@ void LocalMap::updateLocalMap(PointCloudPtr cloud, const Eigen::Isometry3d & tra
     visualizer_->GetViewControl().ConvertFromPinholeCameraParameters(visualizerConfig_);
   }
 
-  for (const auto & point : points) {
+  for (size_t i = 0; i < points.size(); ++i) {
+    const auto & point = points[i];
+    const auto & normal = normals[i];
     auto voxelIndex = getVoxelIndex(point);
     auto found = voxelGrid_.find(voxelIndex);
 
     if (found == voxelGrid_.cend()) {
-      voxelGrid_.emplace(voxelIndex, Voxel(maxNumPointsPerVoxel_, point));
+      voxelGrid_.emplace(voxelIndex, Voxel(maxNumPointsPerVoxel_, point, normal));
     } else {
-      found->second.addPoint(point);
+      found->second.addPoint(point, normal);
     }
   }
 }
 
 LocalMap::Correspondence LocalMap::correspondenceMatching(
-  const PointVector & points, const double maxDistSq,
+  const PointVector & points, const NormalVector & normals, const double maxDistSq,
   double & matchingRmse) const
 {
   Correspondence correspondence;
-  auto & [P, Q] = correspondence;
-  P.reserve(points.size());
-  Q.reserve(points.size());
+  auto & [srcPoints, srcNormals, mapPoints, mapNormals] = correspondence;
+  srcPoints.reserve(points.size());
+  srcNormals.reserve(points.size());
+  mapPoints.reserve(points.size());
+  mapNormals.reserve(points.size());
 
   matchingRmse = 0.0;
 
 #pragma omp parallel
   {
     double distanceSquaredSumPrivate = 0.0;
-    PointVector P_private, Q_private;
+    PointVector srcPointsPrivate, mapPointsPrivate;
+    NormalVector srcNormalsPrivate, mapNormalsPrivate;
 #pragma omp for nowait
     for (size_t i = 0; i < points.size(); ++i) {
       auto searchResult = nearestSearch(points[i], maxDistSq);
       if (searchResult.has_value()) {
-        P_private.push_back(points[i]);
-        Q_private.push_back(searchResult.value().first);
-        distanceSquaredSumPrivate += searchResult.value().second;
+        auto & [mapPoint, mapNormal, distSq] = searchResult.value();
+        srcPointsPrivate.push_back(points[i]);
+        srcNormalsPrivate.push_back(normals[i]);
+        mapPointsPrivate.push_back(mapPoint);
+        mapNormalsPrivate.push_back(mapNormal);
+        distanceSquaredSumPrivate += distSq;
       }
     }
 #pragma omp critical
     {
       matchingRmse += distanceSquaredSumPrivate;
-      for (size_t i = 0; i < P_private.size(); ++i) {
-        P.push_back(P_private[i]);
-        Q.push_back(Q_private[i]);
-      }
+      srcPoints.insert(srcPoints.end(), srcPointsPrivate.begin(), srcPointsPrivate.end());
+      srcNormals.insert(srcNormals.end(), srcNormalsPrivate.begin(), srcNormalsPrivate.end());
+      mapPoints.insert(mapPoints.end(), mapPointsPrivate.begin(), mapPointsPrivate.end());
+      mapNormals.insert(mapNormals.end(), mapNormalsPrivate.begin(), mapNormalsPrivate.end());
     }
   }
 
-  if (P.size() > 0) {
-    matchingRmse = std::sqrt(matchingRmse / static_cast<double>(P.size()));
+  if (srcPoints.size() > 0) {
+    matchingRmse = std::sqrt(matchingRmse / static_cast<double>(srcPoints.size()));
   }
 
   return correspondence;
 }
 
-std::optional<std::pair<Eigen::Vector3d, double>> LocalMap::nearestSearch(
+std::optional<std::tuple<Eigen::Vector3d, Eigen::Vector3d, double>> LocalMap::nearestSearch(
   const Eigen::Vector3d & point,
   const double maxDistSq) const
 {
   Eigen::Vector3d nearestPoint = Eigen::Vector3d::Zero();
+  Eigen::Vector3d nearestNormal = Eigen::Vector3d::Zero();
   double nearestDistSq = maxDistSq;
   auto voxelIndex = getVoxelIndex(point);
 
@@ -121,13 +135,15 @@ std::optional<std::pair<Eigen::Vector3d, double>> LocalMap::nearestSearch(
   for (const auto & voxel : voxels) {
     auto searchResult = voxel.get().nearestSearchInVoxel(point, nearestDistSq);
     if (searchResult.has_value()) {
-      nearestPoint = searchResult.value().first;
-      nearestDistSq = searchResult.value().second;
+      auto &[mapPoint, mapNormal, distSq] = searchResult.value();
+      nearestPoint = mapPoint;
+      nearestNormal = mapNormal;
+      nearestDistSq = distSq;
     }
   }
 
   if (nearestDistSq < maxDistSq) {
-    return std::make_pair(nearestPoint, nearestDistSq);
+    return std::make_tuple(nearestPoint, nearestNormal, nearestDistSq);
   } else {
     return std::nullopt;
   }
