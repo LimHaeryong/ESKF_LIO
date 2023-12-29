@@ -10,26 +10,14 @@ Eigen::Matrix3d skewSymmetric(const Eigen::Vector3d & vec)
   return skew;
 }
 
-void transformPoints(std::vector<Eigen::Vector3d> & points, const Eigen::Isometry3d & transform)
-{
-  Eigen::Map<Eigen::Matrix<double, 3, Eigen::Dynamic>> pointMatrix(points[0].data(), 3,
-    points.size());
-  pointMatrix = transform * pointMatrix;
-}
-
 void transformPoints(
   std::vector<Eigen::Vector3d> & points, const Eigen::Isometry3d & transform,
-  size_t start, size_t size)
+  size_t start, size_t end)
 {
-  Eigen::Map<Eigen::Matrix<double, 3, Eigen::Dynamic>> pointMatrix(points[start].data(), 3, size);
-  pointMatrix = transform * pointMatrix;
-}
-
-void rotateNormals(std::vector<Eigen::Vector3d> & normals, const Eigen::Matrix3d & rotation)
-{
-  Eigen::Map<Eigen::Matrix<double, 3, Eigen::Dynamic>> normalMatrix(normals[0].data(), 3,
-    normals.size());
-  normalMatrix = rotation * normalMatrix;
+  for(size_t i = start; i < end; ++i)
+  {
+    points[i] = transform * points[i];
+  }
 }
 
 Eigen::Vector3d rotationMatrixToVector(const Eigen::Matrix3d & R)

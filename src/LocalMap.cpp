@@ -33,10 +33,8 @@ std::optional<std::tuple<Eigen::Vector3d, Eigen::Vector3d,
 
 void LocalMap::updateLocalMap(PointCloudPtr cloud, const Eigen::Isometry3d & transform)
 {
-  auto & points = cloud->points_;
-  auto & normals = cloud->normals_;
-  Utils::transformPoints(points, transform);
-  Utils::rotateNormals(normals, transform.linear());
+  
+  cloud->Transform(transform.matrix());
   open3d::camera::PinholeCameraParameters parameter;
   parameter.extrinsic_ = transform.matrix();
   trajectory_.parameters_.push_back(parameter);
@@ -51,6 +49,9 @@ void LocalMap::updateLocalMap(PointCloudPtr cloud, const Eigen::Isometry3d & tra
     visualizer_->GetViewControl().ConvertFromPinholeCameraParameters(visualizerConfig_);
   }
 
+  auto & points = cloud->points_;
+  auto & normals = cloud->normals_;
+  
   for (size_t i = 0; i < points.size(); ++i) {
     const auto & point = points[i];
     const auto & normal = normals[i];

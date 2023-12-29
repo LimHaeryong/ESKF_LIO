@@ -12,7 +12,7 @@ void CloudPreprocessor::process(
 
   auto & cloud_points = lidarMeas->cloud->points_;
   // transform lidar points to imu coordinate
-  Utils::transformPoints(cloud_points, T_il_);
+  lidarMeas->cloud->Transform(T_il_.matrix());
   if (!states.empty()) {
     deskew(states, lidarMeas->pointTime, cloud_points);
   }
@@ -70,7 +70,7 @@ void CloudPreprocessor::deskew(
     transform.translation() = state->position;
     transform = SE3LidarEndInv * transform;
 
-    Utils::transformPoints(points, transform, pointStartIndex, pointEndIndex - pointStartIndex);
+    Utils::transformPoints(points, transform, pointStartIndex, pointEndIndex);
   }
 }
 

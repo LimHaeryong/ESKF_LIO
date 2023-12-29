@@ -10,8 +10,7 @@ Eigen::Isometry3d ICP::align(
 {
   PointCloud tmpCloud = cloud;
   Eigen::Isometry3d totalTransform = guess;
-  Utils::transformPoints(tmpCloud.points_, totalTransform);
-  Utils::rotateNormals(tmpCloud.normals_, totalTransform.linear());
+  tmpCloud.Transform(totalTransform.matrix());
 
   for (int i = 0; i < maxIteration_; ++i) {
     matchingRmsePrev_ = matchingRmse_;
@@ -26,8 +25,8 @@ Eigen::Isometry3d ICP::align(
       converged_ = true;
       break;
     }
-    Utils::transformPoints(tmpCloud.points_, transformIter);
-    Utils::rotateNormals(tmpCloud.normals_, transformIter.linear());
+
+    tmpCloud.Transform(transformIter.matrix());
   }
 
   if (!converged_) {

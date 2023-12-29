@@ -9,11 +9,9 @@ namespace ESKF_LIO::Utils
 {
 Eigen::Matrix3d skewSymmetric(const Eigen::Vector3d & vec);
 
-void transformPoints(std::vector<Eigen::Vector3d> & points, const Eigen::Isometry3d & transform);
 void transformPoints(
   std::vector<Eigen::Vector3d> & points, const Eigen::Isometry3d & transform, size_t start,
-  size_t size);
-void rotateNormals(std::vector<Eigen::Vector3d> & normals, const Eigen::Matrix3d & rotation);
+  size_t end);
 
 Eigen::Vector3d rotationMatrixToVector(const Eigen::Matrix3d & R);
 Eigen::Matrix3d rotationVectorToMatrix(const Eigen::Vector3d & r);
