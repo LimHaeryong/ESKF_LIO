@@ -6,7 +6,7 @@ The implementation of ESKF is based on [Quaternion kinematics for the error-stat
 
 Key Features:
 - Utilizes a Voxel Grid based on a hash table to store local map points.
-- Uses a Symmetric Point-to-Plane Iterative Closest Point algorithm for Registration. [A Symmetric Objective Function for ICP](https://gfx.cs.princeton.edu/pubs/Rusinkiewicz_2019_ASO/symm_icp.pdf)
+- Uses a [Voxelized GICP](https://easychair.org/publications/preprint_open/ftvV) for Registration. 
 
 ## Installation
 
