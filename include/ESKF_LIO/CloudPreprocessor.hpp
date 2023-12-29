@@ -32,9 +32,8 @@ public:
   }
 
   void process(const std::deque<State> & states, LidarMeasurementPtr lidarMeas) const;
-  void voxelDownsample(
-    std::vector<Eigen::Vector3d> & points,
-    std::vector<Eigen::Matrix3d> & covariances) const;
+  void voxelDownsampleAndEstimateCovariances(
+  PointCloud & cloud) const;
 
 private:
   CloudPreprocessor() = delete;
@@ -42,8 +41,6 @@ private:
   void deskew(
     const std::deque<State> & states, const std::vector<double> & pointTime,
     std::vector<Eigen::Vector3d> & points) const;
-
-  void regularizeCovariances(std::vector<Eigen::Matrix3d>& covariances) const;
 
   Eigen::Vector3i getVoxelIndex(const Eigen::Vector3d & point) const;
 

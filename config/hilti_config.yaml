@@ -34,11 +34,11 @@ kalman_filter:
     rotation_noise: 1.0e-6
 
 local_map:
-  voxel_size: 0.5
-  max_num_points_per_voxel: 20
+  voxel_size: 0.3
+  max_num_points_per_voxel: 1000
 
 cloud_preprocessor:
-  voxel_size: 0.5
+  voxel_size: 0.3
 
 registration:
   max_iteration: 100
