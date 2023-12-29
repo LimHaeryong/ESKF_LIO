@@ -9,18 +9,18 @@ void CloudPreprocessor::process(
   const std::deque<State> & states,
   LidarMeasurementPtr lidarMeas) const
 {
-
-  auto & cloud_points = lidarMeas->cloud->points_;
+  auto & cloudPoints = lidarMeas->cloud->points_;
   // transform lidar points to imu coordinate
   lidarMeas->cloud->Transform(T_il_.matrix());
   if (!states.empty()) {
-    deskew(states, lidarMeas->pointTime, cloud_points);
+    deskew(states, lidarMeas->pointTime, cloudPoints);
   }
   lidarMeas->pointTime.clear();
   lidarMeas->pointTime.shrink_to_fit();
-  lidarMeas->cloud->EstimateNormals();
-  auto & cloud_normals = lidarMeas->cloud->normals_;
-  voxelDownsample(cloud_points, cloud_normals);
+  lidarMeas->cloud->EstimateCovariances();
+  auto & cloudCovs = lidarMeas->cloud->covariances_;
+  voxelDownsample(cloudPoints, cloudCovs);
+  regularizeCovariances(cloudCovs);
 }
 
 void CloudPreprocessor::deskew(
@@ -76,9 +76,10 @@ void CloudPreprocessor::deskew(
 
 void CloudPreprocessor::voxelDownsample(
   std::vector<Eigen::Vector3d> & points,
-  std::vector<Eigen::Vector3d> & normals) const
+  std::vector<Eigen::Matrix3d> & covariances) const
 {
-  std::vector<Eigen::Vector3d> pointsDown, normalsDown;
+  std::vector<Eigen::Vector3d> pointsDown;
+  std::vector<Eigen::Matrix3d> covsDown;
   std::unordered_map<Eigen::Vector3i, int, open3d::utility::hash_eigen<Eigen::Vector3i>> voxelGrid;
 
   for (size_t i = 0; i < points.size(); ++i) {
@@ -89,19 +90,28 @@ void CloudPreprocessor::voxelDownsample(
   }
 
   pointsDown.reserve(voxelGrid.size());
-  normalsDown.reserve(voxelGrid.size());
+  covsDown.reserve(voxelGrid.size());
   for (const auto & [_, i] : voxelGrid) {
     pointsDown.push_back(points[i]);
-    normalsDown.push_back(normals[i]);
+    covsDown.push_back(covariances[i]);
   }
   std::swap(points, pointsDown);
-  std::swap(normals, normalsDown);
+  std::swap(covariances, covsDown);
 }
 
 Eigen::Vector3i CloudPreprocessor::getVoxelIndex(const Eigen::Vector3d & point) const
 {
   Eigen::Vector3i voxelIndex = (point / voxelSize_).array().floor().cast<int>();
   return voxelIndex;
+}
+
+void CloudPreprocessor::regularizeCovariances(std::vector<Eigen::Matrix3d>& covariances) const
+{
+  for(auto& covariance : covariances)
+  {
+    Eigen::JacobiSVD<Eigen::Matrix3d> svd(covariance, Eigen::ComputeFullU | Eigen::ComputeFullV);
+    covariance = svd.matrixU() * covarianceFactor_ * svd.matrixV().transpose();
+  }
 }
 
 }   // namespace ESKF_LIO

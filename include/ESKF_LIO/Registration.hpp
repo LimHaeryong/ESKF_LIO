@@ -16,16 +16,11 @@ class ICP
 {
 public:
   using PointVector = typename std::vector<Eigen::Vector3d>;
-  using NormalVector = typename std::vector<Eigen::Vector3d>;
-  using Correspondence = typename std::tuple<PointVector, NormalVector, PointVector, NormalVector>;
+  using CovarianceVector = typename std::vector<Eigen::Matrix3d>;
+  using Correspondence = typename std::tuple<PointVector, CovarianceVector, PointVector, CovarianceVector>;
 
   ICP(const YAML::Node & config)
-  : maxCorrespondenceDistSquared_(
-      config["registration"]["max_correspondence_distance_sq"].as<double>())
-    , maxIteration_(config["registration"]["max_iteration"].as<int>())
-    ,
-    relativeMatchingRmseThreshold_(
-      config["registration"]["relative_matching_rmse_threshold"].as<double>())
+  : maxIteration_(config["registration"]["max_iteration"].as<int>())
     , translationSquaredThreshold_(config["registration"]["translation_sq_threshold"].as<double>())
     , cosineThreshold_(config["registration"]["cosine_threshold"].as<double>())
   {
@@ -45,17 +40,13 @@ private:
   computeJTJAndJTr(
     const Eigen::Vector3d & srcPoint,
     const Eigen::Vector3d & mapPoint,
-    const Eigen::Vector3d & normal) const;
+    const Eigen::Matrix3d & covariance) const;
 
-  double maxCorrespondenceDistSquared_;
   int maxIteration_;
-  double relativeMatchingRmseThreshold_;
   double translationSquaredThreshold_;
   double cosineThreshold_;
 
   bool converged_ = false;
-  double matchingRmse_ = std::numeric_limits<double>::max();
-  double matchingRmsePrev_ = std::numeric_limits<double>::max();
 };
 
 }  // namespace ESKF_LIO

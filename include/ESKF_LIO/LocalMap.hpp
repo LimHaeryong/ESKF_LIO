@@ -18,8 +18,8 @@ public:
   struct Voxel;
 
   using PointVector = typename std::vector<Eigen::Vector3d>;
-  using NormalVector = typename std::vector<Eigen::Vector3d>;
-  using Correspondence = typename std::tuple<PointVector, NormalVector, PointVector, NormalVector>;
+  using CovarianceVector = typename std::vector<Eigen::Matrix3d>;
+  using Correspondence = typename std::tuple<PointVector, CovarianceVector, PointVector, CovarianceVector>;
   using VoxelHash = typename open3d::utility::hash_eigen<Eigen::Vector3i>;
   using VoxelGrid = typename std::unordered_map<Eigen::Vector3i, Voxel, VoxelHash>;
 
@@ -28,7 +28,6 @@ public:
     bool visualize = true)
   : voxelSize_(config["local_map"]["voxel_size"].as<double>())
     , maxNumPointsPerVoxel_(config["local_map"]["max_num_points_per_voxel"].as<size_t>())
-    , voxelOffsets_(initVoxelOffsets(config["local_map"]["num_voxel_offsets"].as<size_t>()))
     , visualizerConfig_(visualizerConfig)
     , visualize_(visualize)
   {
@@ -42,11 +41,10 @@ public:
   }
 
   LocalMap(
-    double voxelSize, size_t maxNumPointsPerVoxel, size_t numVoxelOffsets,
+    double voxelSize, size_t maxNumPointsPerVoxel, 
     bool visualize = false)
   : voxelSize_(voxelSize)
     , maxNumPointsPerVoxel_(maxNumPointsPerVoxel)
-    , voxelOffsets_(initVoxelOffsets(numVoxelOffsets))
     , visualize_(visualize)
   {
   }
@@ -54,38 +52,34 @@ public:
   struct Voxel
   {
     size_t maxNumPoints;
+    size_t numPoints;
     PointVector points;
-    NormalVector normals;
+    Eigen::Vector3d mean;
+    Eigen::Matrix3d covariance;
 
-    Voxel(size_t maxNumPoints, const Eigen::Vector3d & point, const Eigen::Vector3d & normal)
-    : maxNumPoints(maxNumPoints)
+
+    Voxel(size_t maxNumPoints, const Eigen::Vector3d & point, const Eigen::Matrix3d & covariance)
+    : maxNumPoints(maxNumPoints), numPoints(1), mean(point), covariance(covariance)
     {
       points.reserve(maxNumPoints);
-      normals.reserve(maxNumPoints);
       points.push_back(point);
-      normals.push_back(normal);
     }
 
-    void addPoint(const Eigen::Vector3d & point, const Eigen::Vector3d & normal)
+    void addPoint(const Eigen::Vector3d & point, const Eigen::Matrix3d & covariance)
     {
-      if (points.size() < maxNumPoints) {
+      if (numPoints < maxNumPoints) {
         points.push_back(point);
-        normals.push_back(normal);
+        mean = (numPoints * mean + point) / (numPoints + 1);
+        this->covariance = (numPoints * this->covariance + covariance) / (numPoints + 1);
+        ++numPoints;
       }
     }
 
-    std::optional<std::tuple<Eigen::Vector3d, Eigen::Vector3d, double>> nearestSearchInVoxel(
-      const Eigen::Vector3d & point,
-      const double maxDistSq) const;
   };
 
   void updateLocalMap(PointCloudPtr cloud, const Eigen::Isometry3d & transform);
   Correspondence correspondenceMatching(
-    const PointVector & points, const NormalVector & normals, const double maxDistSq,
-    double & matchingRmse) const;
-  std::optional<std::tuple<Eigen::Vector3d, Eigen::Vector3d, double>> nearestSearch(
-    const Eigen::Vector3d & point,
-    const double maxDistSq) const;
+    const PointVector & points, const CovarianceVector & covariances) const;
 
   bool visualizeLocalMap() const;
   void save(const std::string & cloud_path, const std::string & trajectory_path) const;
@@ -96,9 +90,6 @@ private:
   double voxelSize_;
   size_t maxNumPointsPerVoxel_;
   VoxelGrid voxelGrid_;
-
-  std::vector<Eigen::Vector3i> initVoxelOffsets(size_t numVoxels);
-  const std::vector<Eigen::Vector3i> voxelOffsets_;
 
   open3d::camera::PinholeCameraParameters visualizerConfig_;
 

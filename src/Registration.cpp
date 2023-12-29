@@ -13,11 +13,9 @@ Eigen::Isometry3d ICP::align(
   tmpCloud.Transform(totalTransform.matrix());
 
   for (int i = 0; i < maxIteration_; ++i) {
-    matchingRmsePrev_ = matchingRmse_;
     auto correspondence =
       localMap.correspondenceMatching(
-      tmpCloud.points_, tmpCloud.normals_, maxCorrespondenceDistSquared_,
-      matchingRmse_);
+      tmpCloud.points_, tmpCloud.covariances_);
     auto transformIter = computeTransform(correspondence);
     totalTransform = transformIter * totalTransform;
 
@@ -38,11 +36,6 @@ Eigen::Isometry3d ICP::align(
 
 bool ICP::convergenceCheck(const Eigen::Isometry3d & transformIter) const
 {
-  double relativeMatchingRmse = std::abs(matchingRmse_ - matchingRmsePrev_);
-  if (relativeMatchingRmse > relativeMatchingRmseThreshold_) {
-    return false;
-  }
-
   double cosine = 0.5 * (transformIter.linear().trace() - 1.0);
   if (cosine < cosineThreshold_) {
     return false;
@@ -58,7 +51,7 @@ bool ICP::convergenceCheck(const Eigen::Isometry3d & transformIter) const
 
 Eigen::Isometry3d ICP::computeTransform(Correspondence & correspondence) const
 {
-  auto & [srcPoints, srcNormals, mapPoints, mapNormals] = correspondence;
+  auto & [srcPoints, srcCovs, mapPoints, mapCovs] = correspondence;
 
   Eigen::Matrix<double, 6, 6> JTJ = Eigen::Matrix<double, 6, 6>::Zero();
   Eigen::Vector<double, 6> JTr = Eigen::Vector<double, 6>::Zero();
@@ -71,7 +64,7 @@ Eigen::Isometry3d ICP::computeTransform(Correspondence & correspondence) const
 #pragma omp for nowait
     for (size_t i = 0; i < numCorr; ++i) {
       auto [JTJi,
-        JTri] = computeJTJAndJTr(srcPoints[i], mapPoints[i], srcNormals[i] + mapNormals[i]);
+        JTri] = computeJTJAndJTr(srcPoints[i], mapPoints[i], srcCovs[i] + mapCovs[i]);
       JTJPrivate += JTJi;
       JTrPrivate += JTri;
     }
@@ -91,14 +84,21 @@ std::pair<Eigen::Matrix<double, 6, 6>, Eigen::Vector<double, 6>>
 ICP::computeJTJAndJTr(
   const Eigen::Vector3d & srcPoint,
   const Eigen::Vector3d & mapPoint,
-  const Eigen::Vector3d & normal) const
+  const Eigen::Matrix3d & covariance) const
 {
-  Eigen::Vector<double, 6> JT;
-  Eigen::Vector<double, 1> r;
-  JT.head(3) = normal;
-  JT.tail(3) = srcPoint.cross(normal);
-  r = (srcPoint - mapPoint).transpose() * normal;
-  return std::make_pair(JT * JT.transpose(), JT * r);
+  Eigen::Matrix<double, 6, 6> JTJ;
+  Eigen::Vector<double, 6> JTr;
+
+  Eigen::Matrix<double, 3, 6> se3Jacobian;
+  se3Jacobian.block<3, 3>(0, 0) = Eigen::Matrix3d::Identity();
+  se3Jacobian.block<3, 3>(0, 3) = -Utils::skewSymmetric(srcPoint);
+  Eigen::Matrix3d covarianceInv = covariance.inverse();
+  Eigen::Matrix<double, 6, 3> JT = se3Jacobian.transpose() * covarianceInv;
+  Eigen::Vector3d r = srcPoint - mapPoint;
+  // double error = std::sqrt((r.transpose() * covarianceInv * r).coeff(0)) + 1e-6;
+  JTJ = JT * se3Jacobian;
+  JTr = JT * r;
+  return std::make_pair(JTJ, JTr);
 }
 
 }  // namespace ESKF_LIO

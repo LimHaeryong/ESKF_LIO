@@ -26,12 +26,15 @@ public:
 
     T_il_.linear() = quat.toRotationMatrix();
     T_il_.translation() = trans;
+
+    covarianceFactor_ = Eigen::Matrix3d::Identity();
+    covarianceFactor_(2, 2) = 1e-2;
   }
 
   void process(const std::deque<State> & states, LidarMeasurementPtr lidarMeas) const;
   void voxelDownsample(
     std::vector<Eigen::Vector3d> & points,
-    std::vector<Eigen::Vector3d> & normals) const;
+    std::vector<Eigen::Matrix3d> & covariances) const;
 
 private:
   CloudPreprocessor() = delete;
@@ -40,11 +43,13 @@ private:
     const std::deque<State> & states, const std::vector<double> & pointTime,
     std::vector<Eigen::Vector3d> & points) const;
 
+  void regularizeCovariances(std::vector<Eigen::Matrix3d>& covariances) const;
 
   Eigen::Vector3i getVoxelIndex(const Eigen::Vector3d & point) const;
 
   double voxelSize_;
   Eigen::Isometry3d T_il_;
+  Eigen::Matrix3d covarianceFactor_;
 };
 }        // namespace ESKF_LIO
 
