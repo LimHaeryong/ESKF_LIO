@@ -14,8 +14,7 @@ void transformPoints(
   std::vector<Eigen::Vector3d> & points, const Eigen::Isometry3d & transform,
   size_t start, size_t end)
 {
-  for(size_t i = start; i < end; ++i)
-  {
+  for (size_t i = start; i < end; ++i) {
     points[i] = transform * points[i];
   }
 }

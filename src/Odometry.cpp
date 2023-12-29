@@ -5,6 +5,9 @@ namespace ESKF_LIO
 
 void Odometry::run()
 {
+  double cloudPreprocessorElapsedTime = 0.0, filterUpdateElapsedTime = 0.0,
+    mapUpdateElapsedTime = 0.0;
+  int numFrames = 0;
   while (!exitFlag_) {
     if (visualize_) {
       if (localMap_->visualizeLocalMap() == false) {
@@ -61,15 +64,34 @@ void Odometry::run()
     }
 
     const auto & states = kalmanFilter_->getStates();
-    cloudPreprocessor_->process(states, lidarMeas_);
 
+    auto cloudPreprocessorStart = omp_get_wtime();
+    cloudPreprocessor_->process(states, lidarMeas_);
+    auto cloudPreprocessorEnd = omp_get_wtime();
+
+    auto filterUpdateStart = omp_get_wtime();
     // kalman filter update
     auto transform = kalmanFilter_->update(*lidarMeas_, *localMap_);
+    auto filterUpdateEnd = omp_get_wtime();
 
+    auto mapUpdateStart = omp_get_wtime();
     // local map update
     auto lidarMeasCopy = lidarMeas_;
     lidarMeas_ = nullptr;
     localMap_->updateLocalMap(std::move(lidarMeasCopy->cloud), transform);
+    auto mapUpdateEnd = omp_get_wtime();
+
+    ++numFrames;
+    cloudPreprocessorElapsedTime += cloudPreprocessorEnd - cloudPreprocessorStart;
+    filterUpdateElapsedTime += filterUpdateEnd - filterUpdateStart;
+    mapUpdateElapsedTime += mapUpdateEnd - mapUpdateStart;
   }
+
+  std::cout << "cloud preprocessor average elapsed time = " << std::fixed <<
+    cloudPreprocessorElapsedTime / numFrames * 1000 << " ms\n";
+  std::cout << "filter update average elapsed time = " << std::fixed <<
+    filterUpdateElapsedTime / numFrames * 1000 << " ms\n";
+  std::cout << "map update average elapsed time = " << std::fixed <<
+    mapUpdateElapsedTime / numFrames * 1000 << " ms\n";
 }
 }  // namespace ESKF_LIO

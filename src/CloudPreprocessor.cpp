@@ -3,6 +3,8 @@
 #include "ESKF_LIO/CloudPreprocessor.hpp"
 #include "ESKF_LIO/Utils.hpp"
 
+#include <omp.h>
+
 namespace ESKF_LIO
 {
 void CloudPreprocessor::process(
@@ -18,9 +20,8 @@ void CloudPreprocessor::process(
   }
   lidarMeas->pointTime.clear();
   lidarMeas->pointTime.shrink_to_fit();
-  lidarMeas->cloud->EstimateNormals();
-  auto & cloud_normals = lidarMeas->cloud->normals_;
-  voxelDownsample(cloud_points, cloud_normals);
+
+  voxelDownsampleAndEstimateNormals(*lidarMeas->cloud);
 }
 
 void CloudPreprocessor::deskew(
@@ -74,11 +75,15 @@ void CloudPreprocessor::deskew(
   }
 }
 
-void CloudPreprocessor::voxelDownsample(
-  std::vector<Eigen::Vector3d> & points,
-  std::vector<Eigen::Vector3d> & normals) const
+void CloudPreprocessor::voxelDownsampleAndEstimateNormals(
+  PointCloud & cloud) const
 {
-  std::vector<Eigen::Vector3d> pointsDown, normalsDown;
+  open3d::geometry::KDTreeFlann kdtree;
+  kdtree.SetGeometry(cloud);
+
+  auto & points = cloud.points_;
+  auto & normals = cloud.normals_;
+  std::vector<Eigen::Vector3d> pointsDown;
   std::unordered_map<Eigen::Vector3i, int, open3d::utility::hash_eigen<Eigen::Vector3i>> voxelGrid;
 
   for (size_t i = 0; i < points.size(); ++i) {
@@ -88,20 +93,55 @@ void CloudPreprocessor::voxelDownsample(
     }
   }
 
-  pointsDown.reserve(voxelGrid.size());
-  normalsDown.reserve(voxelGrid.size());
+  int numPoints = voxelGrid.size();
+  std::vector<int> indices;
+  indices.reserve(numPoints);
   for (const auto & [_, i] : voxelGrid) {
-    pointsDown.push_back(points[i]);
-    normalsDown.push_back(normals[i]);
+    indices.push_back(i);
   }
+
+  pointsDown.resize(voxelGrid.size());
+  normals.resize(voxelGrid.size());
+
+#pragma omp parallel for
+  for (int i = 0; i < numPoints; ++i) {
+    const auto & point = points[indices[i]];
+    pointsDown[i] = point;
+    normals[i] = computeNormalFromKDTree(kdtree, points, point);
+  }
+
+
   std::swap(points, pointsDown);
-  std::swap(normals, normalsDown);
+
 }
 
 Eigen::Vector3i CloudPreprocessor::getVoxelIndex(const Eigen::Vector3d & point) const
 {
   Eigen::Vector3i voxelIndex = (point / voxelSize_).array().floor().cast<int>();
   return voxelIndex;
+}
+
+Eigen::Vector3d FastEigen3x3(const Eigen::Matrix3d & covariance);
+
+Eigen::Vector3d CloudPreprocessor::computeNormalFromKDTree(
+  const open3d::geometry::KDTreeFlann & kdtree, const std::vector<Eigen::Vector3d> & points,
+  const Eigen::Vector3d & point) const
+{
+  //
+  std::vector<int> indices;
+  std::vector<double> distanceSq;
+
+  Eigen::Matrix3d covariance;
+
+  if (kdtree.Search(point, open3d::geometry::KDTreeSearchParamKNN(), indices, distanceSq) >= 3) {
+    covariance = open3d::utility::ComputeCovariance(points, indices);
+  } else {
+    covariance = Eigen::Matrix3d::Identity();
+  }
+
+  auto normal = FastEigen3x3(covariance);
+
+  return normal;
 }
 
 }   // namespace ESKF_LIO
