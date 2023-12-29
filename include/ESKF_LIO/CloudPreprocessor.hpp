@@ -26,11 +26,14 @@ public:
 
     T_il_.linear() = quat.toRotationMatrix();
     T_il_.translation() = trans;
+
+    covarianceFactor_ = Eigen::Matrix3d::Identity();
+    covarianceFactor_(2, 2) = 1e-2;
   }
 
   void process(const std::deque<State> & states, LidarMeasurementPtr lidarMeas) const;
-  void voxelDownsampleAndEstimateNormals(
-    PointCloud & cloud) const;
+  void voxelDownsampleAndEstimateCovariances(
+  PointCloud & cloud) const;
 
 private:
   CloudPreprocessor() = delete;
@@ -38,7 +41,6 @@ private:
   void deskew(
     const std::deque<State> & states, const std::vector<double> & pointTime,
     std::vector<Eigen::Vector3d> & points) const;
-
 
   Eigen::Vector3i getVoxelIndex(const Eigen::Vector3d & point) const;
   Eigen::Vector3d computeNormalFromKDTree(
@@ -48,6 +50,7 @@ private:
 
   double voxelSize_;
   Eigen::Isometry3d T_il_;
+  Eigen::Matrix3d covarianceFactor_;
 };
 }        // namespace ESKF_LIO
 

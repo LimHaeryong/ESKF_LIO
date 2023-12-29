@@ -34,16 +34,13 @@ kalman_filter:
     rotation_noise: 1.0e-6
 
 local_map:
-  voxel_size: 0.5
-  max_num_points_per_voxel: 20
-  num_voxel_offsets: 27
+  voxel_size: 0.3
+  max_num_points_per_voxel: 1000
 
 cloud_preprocessor:
-  voxel_size: 0.5
+  voxel_size: 0.3
 
 registration:
-  max_correspondence_distance_sq: 1.0
   max_iteration: 100
-  relative_matching_rmse_threshold: 1.0e-6
   translation_sq_threshold: 1.0e-6
   cosine_threshold: 0.9999

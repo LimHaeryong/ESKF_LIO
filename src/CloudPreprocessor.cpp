@@ -11,17 +11,15 @@ void CloudPreprocessor::process(
   const std::deque<State> & states,
   LidarMeasurementPtr lidarMeas) const
 {
-
-  auto & cloud_points = lidarMeas->cloud->points_;
+  auto & cloudPoints = lidarMeas->cloud->points_;
   // transform lidar points to imu coordinate
   lidarMeas->cloud->Transform(T_il_.matrix());
   if (!states.empty()) {
-    deskew(states, lidarMeas->pointTime, cloud_points);
+    deskew(states, lidarMeas->pointTime, cloudPoints);
   }
   lidarMeas->pointTime.clear();
   lidarMeas->pointTime.shrink_to_fit();
-
-  voxelDownsampleAndEstimateNormals(*lidarMeas->cloud);
+  voxelDownsampleAndEstimateCovariances(*lidarMeas->cloud);
 }
 
 void CloudPreprocessor::deskew(
@@ -75,14 +73,14 @@ void CloudPreprocessor::deskew(
   }
 }
 
-void CloudPreprocessor::voxelDownsampleAndEstimateNormals(
+void CloudPreprocessor::voxelDownsampleAndEstimateCovariances(
   PointCloud & cloud) const
 {
   open3d::geometry::KDTreeFlann kdtree;
   kdtree.SetGeometry(cloud);
 
   auto & points = cloud.points_;
-  auto & normals = cloud.normals_;
+  auto & covariances = cloud.covariances_;
   std::vector<Eigen::Vector3d> pointsDown;
   std::unordered_map<Eigen::Vector3i, int, open3d::utility::hash_eigen<Eigen::Vector3i>> voxelGrid;
 
@@ -100,19 +98,29 @@ void CloudPreprocessor::voxelDownsampleAndEstimateNormals(
     indices.push_back(i);
   }
 
-  pointsDown.resize(voxelGrid.size());
-  normals.resize(voxelGrid.size());
-
+  pointsDown.resize(numPoints);
+  covariances.resize(numPoints);
 #pragma omp parallel for
-  for (int i = 0; i < numPoints; ++i) {
+  for(int i = 0; i < numPoints; ++i)
+  {
     const auto & point = points[indices[i]];
     pointsDown[i] = point;
-    normals[i] = computeNormalFromKDTree(kdtree, points, point);
+
+    std::vector<int> searchIndices;
+    std::vector<double> distanceSq;
+
+    if(kdtree.Search(point, open3d::geometry::KDTreeSearchParamKNN(), searchIndices, distanceSq) >= 3){
+      covariances[i] = open3d::utility::ComputeCovariance(points, searchIndices);
+    } else {
+      covariances[i] = Eigen::Matrix3d::Identity();
+    }
+
+    // regularize covariance matrix
+    Eigen::JacobiSVD<Eigen::Matrix3d> svd(covariances[i], Eigen::ComputeFullU | Eigen::ComputeFullV);
+    covariances[i] = svd.matrixU() * covarianceFactor_ * svd.matrixV().transpose();
   }
-
-
+  
   std::swap(points, pointsDown);
-
 }
 
 Eigen::Vector3i CloudPreprocessor::getVoxelIndex(const Eigen::Vector3d & point) const

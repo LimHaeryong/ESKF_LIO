@@ -1,5 +1,7 @@
 #include "ESKF_LIO/Odometry.hpp"
 
+#include <omp.h>
+
 namespace ESKF_LIO
 {
 
