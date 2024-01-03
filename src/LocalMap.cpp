@@ -7,7 +7,7 @@
 namespace ESKF_LIO
 {
 
-void LocalMap::updateLocalMap(PointCloudPtr cloud, const Eigen::Isometry3d & transform)
+void LocalMap::updateLocalMap(PointCloudPtr cloud, const Eigen::Isometry3d & transform, bool initialize)
 {
 
   cloud->Transform(transform.matrix());
@@ -25,6 +25,12 @@ void LocalMap::updateLocalMap(PointCloudPtr cloud, const Eigen::Isometry3d & tra
     visualizer_->GetViewControl().ConvertFromPinholeCameraParameters(visualizerConfig_);
   }
 
+  if(initialize == false && needsMapUpdate(transform) == false)
+  {
+    prevTransform_ = transform;
+    return;
+  }
+
   auto & points = cloud->points_;
   auto & covariances = cloud->covariances_;
   
@@ -40,6 +46,9 @@ void LocalMap::updateLocalMap(PointCloudPtr cloud, const Eigen::Isometry3d & tra
       found->second.addPoint(point, covariance);
     }
   }
+
+  prevTransform_ = transform;
+  return;
 }
 
 LocalMap::Correspondence LocalMap::correspondenceMatching(
@@ -95,6 +104,23 @@ bool LocalMap::visualizeLocalMap() const
     visualizer_->UpdateRender();
   }
   return true;
+}
+
+bool LocalMap::needsMapUpdate(const Eigen::Isometry3d & transform) const
+{
+  Eigen::Isometry3d moved = prevTransform_.inverse() * transform;
+
+  double cosine = 0.5 * (moved.linear().trace() - 1.0);
+  if (cosine < cosineThreshold_) {
+    return true;
+  }
+
+  double translationSq = moved.translation().squaredNorm();
+  if (translationSq > translationSquaredThreshold_) {
+    return true;
+  }
+
+  return false;
 }
 
 void LocalMap::save(const std::string & cloud_path, const std::string & trajectory_path) const

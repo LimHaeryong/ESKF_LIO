@@ -28,6 +28,8 @@ public:
     bool visualize = true)
   : voxelSize_(config["local_map"]["voxel_size"].as<double>())
     , maxNumPointsPerVoxel_(config["local_map"]["max_num_points_per_voxel"].as<size_t>())
+    , translationSquaredThreshold_(config["local_map"]["update"]["translation_sq_threshold"].as<double>())
+    , cosineThreshold_(config["local_map"]["update"]["cosine_threshold"].as<double>())
     , visualizerConfig_(visualizerConfig)
     , visualize_(visualize)
   {
@@ -77,7 +79,7 @@ public:
 
   };
 
-  void updateLocalMap(PointCloudPtr cloud, const Eigen::Isometry3d & transform);
+  void updateLocalMap(PointCloudPtr cloud, const Eigen::Isometry3d & transform, bool initialize = false);
   Correspondence correspondenceMatching(
     const PointVector & points, const CovarianceVector & covariances) const;
 
@@ -86,9 +88,14 @@ public:
 
 private:
   Eigen::Vector3i getVoxelIndex(const Eigen::Vector3d & point) const;
+  bool needsMapUpdate(const Eigen::Isometry3d & transform) const;
 
   double voxelSize_;
   size_t maxNumPointsPerVoxel_;
+  double translationSquaredThreshold_;
+  double cosineThreshold_;
+  Eigen::Isometry3d prevTransform_;
+
   VoxelGrid voxelGrid_;
 
   open3d::camera::PinholeCameraParameters visualizerConfig_;
