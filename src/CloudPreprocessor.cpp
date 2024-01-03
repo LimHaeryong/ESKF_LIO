@@ -129,27 +129,4 @@ Eigen::Vector3i CloudPreprocessor::getVoxelIndex(const Eigen::Vector3d & point) 
   return voxelIndex;
 }
 
-Eigen::Vector3d FastEigen3x3(const Eigen::Matrix3d & covariance);
-
-Eigen::Vector3d CloudPreprocessor::computeNormalFromKDTree(
-  const open3d::geometry::KDTreeFlann & kdtree, const std::vector<Eigen::Vector3d> & points,
-  const Eigen::Vector3d & point) const
-{
-  //
-  std::vector<int> indices;
-  std::vector<double> distanceSq;
-
-  Eigen::Matrix3d covariance;
-
-  if (kdtree.Search(point, open3d::geometry::KDTreeSearchParamKNN(), indices, distanceSq) >= 3) {
-    covariance = open3d::utility::ComputeCovariance(points, indices);
-  } else {
-    covariance = Eigen::Matrix3d::Identity();
-  }
-
-  auto normal = FastEigen3x3(covariance);
-
-  return normal;
-}
-
 }   // namespace ESKF_LIO

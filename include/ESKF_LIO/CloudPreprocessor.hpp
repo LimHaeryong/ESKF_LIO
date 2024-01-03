@@ -43,10 +43,6 @@ private:
     std::vector<Eigen::Vector3d> & points) const;
 
   Eigen::Vector3i getVoxelIndex(const Eigen::Vector3d & point) const;
-  Eigen::Vector3d computeNormalFromKDTree(
-    const open3d::geometry::KDTreeFlann & kdtree,
-    const std::vector<Eigen::Vector3d> & points,
-    const Eigen::Vector3d & point) const;
 
   double voxelSize_;
   Eigen::Isometry3d T_il_;

@@ -32,7 +32,6 @@ add_library(eskf_lio
   src/CloudPreprocessor.cpp
   src/Registration.cpp
   src/Utils.cpp
-  src/EstimateNormals.cpp
 )
 
 target_link_libraries(eskf_lio 

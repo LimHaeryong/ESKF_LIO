@@ -37,19 +37,31 @@ Eigen::Quaterniond rotationVectorToQuaternion(const Eigen::Vector3d & r)
   return Eigen::Quaterniond(angleAxis);
 }
 
+Eigen::Matrix3d computeJ(const Eigen::Vector3d & r)
+{
+  double angle = r.norm();
+  Eigen::Vector3d axis = r.normalized();
+  Eigen::Matrix3d J;
+  if(angle < 1e-6)
+  {
+    J = Eigen::Matrix3d::Identity();
+  }
+  else
+  {
+    double factor1 = std::sin(angle) / angle;
+    double factor2 = (1.0 - std::cos(angle)) / angle;
+    J = factor1 * Eigen::Matrix3d::Identity() + (1.0 - factor1) * axis * axis.transpose() + factor2 * skewSymmetric(axis);
+  }
+  return J;
+}
+
 Eigen::Isometry3d se3ToSE3(const Eigen::Vector<double, 6> & se3)
 {
   Eigen::Isometry3d SE3;
-  SE3.translation() = se3.head<3>();
+  Eigen::Matrix3d J = computeJ(se3.tail<3>());
+  SE3.translation() = J * se3.head<3>();
   SE3.linear() = rotationVectorToMatrix(se3.tail<3>());
   return SE3;
-}
-Eigen::Vector<double, 6> SE3Tose3(const Eigen::Isometry3d & SE3)
-{
-  Eigen::Vector<double, 6> se3;
-  se3.head<3>() = SE3.translation();
-  se3.tail<3>() = rotationMatrixToVector(SE3.linear());
-  return se3;
 }
 
 Eigen::Isometry3d interpolateSE3(
