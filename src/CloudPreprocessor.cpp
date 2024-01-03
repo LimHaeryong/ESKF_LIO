@@ -101,25 +101,28 @@ void CloudPreprocessor::voxelDownsampleAndEstimateCovariances(
   pointsDown.resize(numPoints);
   covariances.resize(numPoints);
 #pragma omp parallel for
-  for(int i = 0; i < numPoints; ++i)
-  {
+  for (int i = 0; i < numPoints; ++i) {
     const auto & point = points[indices[i]];
     pointsDown[i] = point;
 
     std::vector<int> searchIndices;
     std::vector<double> distanceSq;
 
-    if(kdtree.Search(point, open3d::geometry::KDTreeSearchParamKNN(), searchIndices, distanceSq) >= 3){
+    if (kdtree.Search(
+        point, open3d::geometry::KDTreeSearchParamKNN(), searchIndices,
+        distanceSq) >= 3)
+    {
       covariances[i] = open3d::utility::ComputeCovariance(points, searchIndices);
     } else {
       covariances[i] = Eigen::Matrix3d::Identity();
     }
 
     // regularize covariance matrix
-    Eigen::JacobiSVD<Eigen::Matrix3d> svd(covariances[i], Eigen::ComputeFullU | Eigen::ComputeFullV);
+    Eigen::JacobiSVD<Eigen::Matrix3d> svd(covariances[i],
+      Eigen::ComputeFullU | Eigen::ComputeFullV);
     covariances[i] = svd.matrixU() * covarianceFactor_ * svd.matrixV().transpose();
   }
-  
+
   std::swap(points, pointsDown);
 }
 

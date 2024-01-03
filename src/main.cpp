@@ -20,10 +20,21 @@ void visualizeMapcloud(
     open3d::visualization::RenderOption::PointColorOption::ZCoordinate;
   auto & viewControl = visualizer->GetViewControl();
   visualizer->AddGeometry(cloud);
-  for (size_t i = 0; i < trajectory.parameters_.size(); i += 30) {
+
+  auto lineSet = std::make_shared<open3d::geometry::LineSet>();
+  for (size_t i = 0; i < trajectory.parameters_.size(); ++i) {
+    lineSet->points_.push_back(trajectory.parameters_[i].extrinsic_.block<3, 1>(0, 3));
+    if (i > 0) {
+      lineSet->lines_.emplace_back(i - 1, i);
+    }
+  }
+  lineSet->PaintUniformColor({0, 1, 0});
+  visualizer->AddGeometry(lineSet);
+
+  for (size_t i = 0; i < trajectory.parameters_.size(); i += 50) {
     Eigen::Matrix3d R = trajectory.parameters_[i].extrinsic_.block<3, 3>(0, 0);
     Eigen::Vector3d t = trajectory.parameters_[i].extrinsic_.block<3, 1>(0, 3);
-    auto coord = open3d::geometry::TriangleMesh::CreateCoordinateFrame(3.0, t);
+    auto coord = open3d::geometry::TriangleMesh::CreateCoordinateFrame(2.0, t);
     coord->Rotate(R, t);
     visualizer->AddGeometry(coord);
   }

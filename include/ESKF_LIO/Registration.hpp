@@ -17,7 +17,8 @@ class ICP
 public:
   using PointVector = typename std::vector<Eigen::Vector3d>;
   using CovarianceVector = typename std::vector<Eigen::Matrix3d>;
-  using Correspondence = typename std::tuple<PointVector, CovarianceVector, PointVector, CovarianceVector>;
+  using Correspondence = typename std::tuple<PointVector, CovarianceVector, PointVector,
+      CovarianceVector>;
 
   ICP(const YAML::Node & config)
   : maxIteration_(config["registration"]["max_iteration"].as<int>())

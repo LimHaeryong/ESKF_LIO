@@ -42,15 +42,13 @@ Eigen::Matrix3d computeJ(const Eigen::Vector3d & r)
   double angle = r.norm();
   Eigen::Vector3d axis = r.normalized();
   Eigen::Matrix3d J;
-  if(angle < 1e-6)
-  {
+  if (angle < 1e-6) {
     J = Eigen::Matrix3d::Identity();
-  }
-  else
-  {
+  } else {
     double factor1 = std::sin(angle) / angle;
     double factor2 = (1.0 - std::cos(angle)) / angle;
-    J = factor1 * Eigen::Matrix3d::Identity() + (1.0 - factor1) * axis * axis.transpose() + factor2 * skewSymmetric(axis);
+    J = factor1 * Eigen::Matrix3d::Identity() + (1.0 - factor1) * axis * axis.transpose() +
+      factor2 * skewSymmetric(axis);
   }
   return J;
 }

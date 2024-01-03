@@ -19,7 +19,8 @@ public:
 
   using PointVector = typename std::vector<Eigen::Vector3d>;
   using CovarianceVector = typename std::vector<Eigen::Matrix3d>;
-  using Correspondence = typename std::tuple<PointVector, CovarianceVector, PointVector, CovarianceVector>;
+  using Correspondence = typename std::tuple<PointVector, CovarianceVector, PointVector,
+      CovarianceVector>;
   using VoxelHash = typename open3d::utility::hash_eigen<Eigen::Vector3i>;
   using VoxelGrid = typename std::unordered_map<Eigen::Vector3i, Voxel, VoxelHash>;
 
@@ -28,7 +29,9 @@ public:
     bool visualize = true)
   : voxelSize_(config["local_map"]["voxel_size"].as<double>())
     , maxNumPointsPerVoxel_(config["local_map"]["max_num_points_per_voxel"].as<size_t>())
-    , translationSquaredThreshold_(config["local_map"]["update"]["translation_sq_threshold"].as<double>())
+    ,
+    translationSquaredThreshold_(
+      config["local_map"]["update"]["translation_sq_threshold"].as<double>())
     , cosineThreshold_(config["local_map"]["update"]["cosine_threshold"].as<double>())
     , visualizerConfig_(visualizerConfig)
     , visualize_(visualize)
@@ -39,11 +42,12 @@ public:
       visualizer_->GetRenderOption().SetPointSize(1.0);
       visualizer_->GetRenderOption().background_color_ = {0, 0, 0};
       visualizer_->GetViewControl().ConvertFromPinholeCameraParameters(visualizerConfig);
+      lineSet_ = std::make_shared<open3d::geometry::LineSet>();
     }
   }
 
   LocalMap(
-    double voxelSize, size_t maxNumPointsPerVoxel, 
+    double voxelSize, size_t maxNumPointsPerVoxel,
     bool visualize = false)
   : voxelSize_(voxelSize)
     , maxNumPointsPerVoxel_(maxNumPointsPerVoxel)
@@ -79,7 +83,9 @@ public:
 
   };
 
-  void updateLocalMap(PointCloudPtr cloud, const Eigen::Isometry3d & transform, bool initialize = false);
+  void updateLocalMap(
+    PointCloudPtr cloud, const Eigen::Isometry3d & transform,
+    bool initialize = false);
   Correspondence correspondenceMatching(
     const PointVector & points, const CovarianceVector & covariances) const;
 
@@ -102,8 +108,8 @@ private:
 
   bool visualize_;
   std::shared_ptr<open3d::visualization::Visualizer> visualizer_;
-
   open3d::camera::PinholeCameraTrajectory trajectory_;
+  std::shared_ptr<open3d::geometry::LineSet> lineSet_;
 };
 }  // namespace ESKF_LIO
 

@@ -7,7 +7,9 @@
 namespace ESKF_LIO
 {
 
-void LocalMap::updateLocalMap(PointCloudPtr cloud, const Eigen::Isometry3d & transform, bool initialize)
+void LocalMap::updateLocalMap(
+  PointCloudPtr cloud, const Eigen::Isometry3d & transform,
+  bool initialize)
 {
 
   cloud->Transform(transform.matrix());
@@ -19,21 +21,29 @@ void LocalMap::updateLocalMap(PointCloudPtr cloud, const Eigen::Isometry3d & tra
     auto coord =
       open3d::geometry::TriangleMesh::CreateCoordinateFrame(3.0, transform.translation());
     coord->Rotate(transform.linear(), transform.translation());
+
+    size_t numPoints = lineSet_->points_.size();
+    lineSet_->points_.push_back(transform.translation());
+    if (numPoints > 0) {
+      lineSet_->lines_.emplace_back(numPoints - 1, numPoints);
+      lineSet_->colors_.emplace_back(0, 1, 0);
+    }
+
     visualizer_->ClearGeometries();
     visualizer_->AddGeometry(cloud);
     visualizer_->AddGeometry(coord);
+    visualizer_->AddGeometry(lineSet_);
     visualizer_->GetViewControl().ConvertFromPinholeCameraParameters(visualizerConfig_);
   }
 
-  if(initialize == false && needsMapUpdate(transform) == false)
-  {
+  if (initialize == false && needsMapUpdate(transform) == false) {
     prevTransform_ = transform;
     return;
   }
 
   auto & points = cloud->points_;
   auto & covariances = cloud->covariances_;
-  
+
   for (size_t i = 0; i < points.size(); ++i) {
     const auto & point = points[i];
     const auto & covariance = covariances[i];
@@ -68,8 +78,7 @@ LocalMap::Correspondence LocalMap::correspondenceMatching(
 #pragma omp for nowait
     for (size_t i = 0; i < points.size(); ++i) {
       VoxelGrid::const_iterator found = voxelGrid_.find(getVoxelIndex(points[i]));
-      if(found != voxelGrid_.cend())
-      {
+      if (found != voxelGrid_.cend()) {
         srcPointsPrivate.push_back(points[i]);
         srcCovsPrivate.push_back(covariances[i]);
         mapPointsPrivate.push_back(found->second.mean);

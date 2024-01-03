@@ -33,7 +33,7 @@ public:
 
   void process(const std::deque<State> & states, LidarMeasurementPtr lidarMeas) const;
   void voxelDownsampleAndEstimateCovariances(
-  PointCloud & cloud) const;
+    PointCloud & cloud) const;
 
 private:
   CloudPreprocessor() = delete;
