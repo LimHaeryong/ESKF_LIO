@@ -2,6 +2,7 @@
 #define ESKF_LIO_LOCAL_MAP_HPP_
 
 #include <array>
+#include <limits>
 #include <optional>
 #include <tuple>
 #include <unordered_map>
@@ -33,6 +34,10 @@ public:
     translationSquaredThreshold_(
       config["local_map"]["update"]["translation_sq_threshold"].as<double>())
     , cosineThreshold_(config["local_map"]["update"]["cosine_threshold"].as<double>())
+    , removeDistantPoints_(config["local_map"]["remove_distant_points"]["enabled"].as<bool>())
+    , distanceThreshold_(config["local_map"]["remove_distant_points"]["distance_threshold"].as<double>())
+    , removePeriod_(config["local_map"]["remove_distant_points"]["removing_period"].as<double>())
+    , currentRemoveTime_(std::numeric_limits<double>::lowest())
     , visualizerConfig_(visualizerConfig)
     , visualize_(visualize)
   {
@@ -95,11 +100,16 @@ public:
 private:
   Eigen::Vector3i getVoxelIndex(const Eigen::Vector3d & point) const;
   bool needsMapUpdate(const Eigen::Isometry3d & transform) const;
+  bool needsPointRemoval(const Eigen::Vector3i & voxelIndex, const Eigen::Vector3d & currentPos) const;
 
   double voxelSize_;
   size_t maxNumPointsPerVoxel_;
   double translationSquaredThreshold_;
   double cosineThreshold_;
+  bool removeDistantPoints_;
+  double distanceThreshold_;
+  double removePeriod_;
+  double currentRemoveTime_;
   Eigen::Isometry3d prevTransform_;
 
   VoxelGrid voxelGrid_;

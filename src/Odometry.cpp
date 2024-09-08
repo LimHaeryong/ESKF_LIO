@@ -1,5 +1,6 @@
 #include "ESKF_LIO/Odometry.hpp"
 
+#include <algorithm>
 #include <omp.h>
 
 namespace ESKF_LIO
@@ -9,6 +10,8 @@ void Odometry::run()
 {
   double cloudPreprocessorElapsedTime = 0.0, filterUpdateElapsedTime = 0.0,
     mapUpdateElapsedTime = 0.0;
+  double cloudPreprocessorMaxElapsedTime = 0.0, filterUpdateMaxElapsedTime = 0.0,
+    mapUpdateMaxElapsedTime = 0.0;
   int numFrames = 0;
   while (!exitFlag_) {
     if (visualize_) {
@@ -87,13 +90,22 @@ void Odometry::run()
     cloudPreprocessorElapsedTime += cloudPreprocessorEnd - cloudPreprocessorStart;
     filterUpdateElapsedTime += filterUpdateEnd - filterUpdateStart;
     mapUpdateElapsedTime += mapUpdateEnd - mapUpdateStart;
+    cloudPreprocessorMaxElapsedTime = std::max(
+      cloudPreprocessorMaxElapsedTime, cloudPreprocessorEnd - cloudPreprocessorStart);
+    filterUpdateMaxElapsedTime = std::max(filterUpdateMaxElapsedTime, filterUpdateEnd - filterUpdateStart);
+    mapUpdateMaxElapsedTime = std::max(mapUpdateMaxElapsedTime, mapUpdateEnd - mapUpdateStart);
   }
 
   std::cout << "cloud preprocessor average elapsed time = " << std::fixed <<
     cloudPreprocessorElapsedTime / numFrames * 1000 << " ms\n";
+  std::cout << "cloud preprocessor max elapsed time = " << std::fixed <<
+    cloudPreprocessorMaxElapsedTime * 1000 << " ms\n";
   std::cout << "filter update average elapsed time = " << std::fixed <<
     filterUpdateElapsedTime / numFrames * 1000 << " ms\n";
+  std::cout << "filter update max elapsed time = " << std::fixed <<
+    filterUpdateMaxElapsedTime * 1000 << " ms\n";
   std::cout << "map update average elapsed time = " << std::fixed <<
     mapUpdateElapsedTime / numFrames * 1000 << " ms\n";
+  std::cout << "map update max elapsed time = " << std::fixed << mapUpdateMaxElapsedTime * 1000 << " ms\n";
 }
 }  // namespace ESKF_LIO

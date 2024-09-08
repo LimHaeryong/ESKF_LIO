@@ -39,6 +39,10 @@ local_map:
   update:
     translation_sq_threshold: 1.0e-2
     cosine_threshold: 0.985
+  remove_distant_points:
+    enabled: true
+    distance_threshold: 100.0 # m
+    removing_period: 10 # s
 
 cloud_preprocessor:
   voxel_size: 0.3

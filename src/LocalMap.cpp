@@ -57,6 +57,20 @@ void LocalMap::updateLocalMap(
     }
   }
 
+  if (removeDistantPoints_ && omp_get_wtime() - currentRemoveTime_ > removePeriod_) {
+      size_t numRemovedVoxels = 0;
+      for (auto it = voxelGrid_.begin(); it != voxelGrid_.end();) {
+        if (needsPointRemoval(it->first, transform.translation())) {
+          it = voxelGrid_.erase(it);
+          ++numRemovedVoxels;
+        } else {
+          ++it;
+        }
+      }
+      currentRemoveTime_ = omp_get_wtime();
+      std::cout << "removed " << numRemovedVoxels << " voxels\n";
+  }
+
   prevTransform_ = transform;
   return;
 }
@@ -130,6 +144,13 @@ bool LocalMap::needsMapUpdate(const Eigen::Isometry3d & transform) const
   }
 
   return false;
+}
+
+bool LocalMap::needsPointRemoval(const Eigen::Vector3i & voxelIndex, const Eigen::Vector3d & currentPos) const
+{
+  Eigen::Vector3d voxelCenter = (voxelIndex.cast<double>() + Eigen::Vector3d::Constant(0.5)) * voxelSize_;
+  double distance = (voxelCenter - currentPos).norm();
+  return distance > distanceThreshold_;
 }
 
 void LocalMap::save(const std::string & cloud_path, const std::string & trajectory_path) const
